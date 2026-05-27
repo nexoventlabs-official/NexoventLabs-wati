@@ -41,13 +41,12 @@ export default function Sidebar({
     <aside className="w-[24rem] min-w-[20rem] max-w-[28rem] bg-wati-sidebar border-r border-gray-200 flex flex-col">
       {/* Header */}
       <div className="bg-wati-panel px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center min-w-0">
           <img
-            src="/logo.png"
+            src="/banner1.png"
             alt="Nexovent Labs - Wati"
-            className="w-9 h-9 rounded-full object-cover ring-1 ring-black/5 shrink-0"
+            className="h-9 w-auto object-contain rounded"
           />
-          <div className="font-semibold text-wati-text truncate">Nexovent Labs - Wati</div>
         </div>
         <div className="flex items-center gap-1">
           {onToggleNotifications && (
