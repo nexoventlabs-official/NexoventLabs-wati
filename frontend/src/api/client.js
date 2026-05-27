@@ -1,0 +1,92 @@
+import axios from 'axios';
+
+export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
+
+// Attach the admin JWT to /admin/* requests when present in localStorage so
+// the rest of the app's calls remain unauthenticated.
+api.interceptors.request.use((config) => {
+  if (config.url && config.url.startsWith('/admin/')) {
+    const token = localStorage.getItem('vanigan:adminToken');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
+export const Contacts = {
+  list: (params) => api.get('/contacts', { params }).then((r) => r.data),
+  create: (body) => api.post('/contacts', body).then((r) => r.data),
+  get: (id) => api.get(`/contacts/${id}`).then((r) => r.data),
+  update: (id, body) => api.patch(`/contacts/${id}`, body).then((r) => r.data),
+  markRead: (id) => api.post(`/contacts/${id}/read`).then((r) => r.data),
+  clearChat: (id) => api.delete(`/contacts/${id}/chat`).then((r) => r.data),
+  addNote: (id, text) => api.post(`/contacts/${id}/notes`, { text }).then((r) => r.data),
+  deleteNote: (id, noteId) => api.delete(`/contacts/${id}/notes/${noteId}`).then((r) => r.data),
+};
+
+export const Messages = {
+  list: (contactId, params) => api.get(`/messages/${contactId}`, { params }).then((r) => r.data),
+  sendText: (contactId, body) => api.post(`/messages/${contactId}/text`, body).then((r) => r.data),
+  sendMedia: (contactId, body) => api.post(`/messages/${contactId}/media`, body).then((r) => r.data),
+  sendReaction: (contactId, body) => api.post(`/messages/${contactId}/reaction`, body).then((r) => r.data),
+  sendTemplate: (contactId, body) => api.post(`/messages/${contactId}/template`, body).then((r) => r.data),
+  delete: (id) => api.delete(`/messages/${id}`).then((r) => r.data),
+};
+
+export const Templates = {
+  list: () => api.get('/templates').then((r) => r.data),
+  sync: () => api.post('/templates/sync').then((r) => r.data),
+  create: (body) => api.post('/templates', body).then((r) => r.data),
+  submit: (id) => api.post(`/templates/${id}/submit`).then((r) => r.data),
+  refresh: (id) => api.post(`/templates/${id}/refresh`).then((r) => r.data),
+  // Update only the per-button auto-reply texts. Local-only - does not touch Meta.
+  // body: { replies: { "<button text>": "<reply text>", ... } }
+  updateReplies: (id, replies) => api.patch(`/templates/${id}/replies`, { replies }).then((r) => r.data),
+  delete: (id) => api.delete(`/templates/${id}`).then((r) => r.data),
+};
+
+export const Uploads = {
+  // waId is optional - when provided, file is saved to Cloudinary under wati_panel/<waId>/
+  upload: (file, waId, onProgress) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (waId) fd.append('waId', String(waId));
+    return api.post('/upload', fd, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      onUploadProgress: (e) => onProgress && onProgress(Math.round((e.loaded * 100) / (e.total || 1))),
+    }).then((r) => r.data);
+  },
+};
+
+// --- Admin API -------------------------------------------------------------
+// All admin requests (except `login`) get a Bearer token attached by the
+// interceptor above when `vanigan:adminToken` is set in localStorage.
+export const Admin = {
+  login: (username, password) =>
+    api.post('/admin/login', { username, password }).then((r) => r.data),
+  me: () => api.get('/admin/me').then((r) => r.data),
+  listContacts: (params) =>
+    api.get('/admin/contacts', { params }).then((r) => r.data),
+  getContact: (id) =>
+    api.get(`/admin/contacts/${id}`).then((r) => r.data),
+  // Returns a Blob - caller is responsible for triggering the download.
+  reportUrl: ({ format = 'xlsx', preset = 'monthly', from, to }) => {
+    const params = new URLSearchParams({ format, preset });
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    return `${API_URL}/api/admin/report?${params.toString()}`;
+  },
+  downloadReport: async ({ format = 'xlsx', preset = 'monthly', from, to }) => {
+    const params = { format, preset };
+    if (from) params.from = from;
+    if (to) params.to = to;
+    const r = await api.get('/admin/report', { params, responseType: 'blob' });
+    return r.data;
+  },
+};
+
+export default api;

@@ -1,0 +1,57 @@
+# Render Blueprint for the Vanigan Support backend.
+# Lives at the repo root so Render auto-detects it on "New Blueprint".
+services:
+  - type: web
+    name: vanigan-support-backend
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      # Meta WhatsApp Cloud API
+      - key: META_ACCESS_TOKEN
+        sync: false
+      - key: META_PHONE_NUMBER_ID
+        sync: false
+      - key: META_WABA_ID
+        sync: false
+      - key: META_APP_ID
+        sync: false
+      - key: META_APP_SECRET
+        sync: false
+      - key: META_GRAPH_VERSION
+        value: v21.0
+      - key: META_VERIFY_TOKEN
+        sync: false
+      # Cloudinary (media uploads + welcome video)
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Redis (Redis Cloud) - strict message ordering + cache
+      - key: REDIS_HOST
+        sync: false
+      - key: REDIS_PORT
+        sync: false
+      - key: REDIS_PASSWORD
+        sync: false
+      - key: REDIS_FLUSH_ON_STARTUP
+        value: "false"
+      # Admin panel (/admin) credentials + JWT signing secret
+      - key: ADMIN_USER
+        value: admin
+      - key: ADMIN_PASS
+        value: admin
+      - key: JWT_SECRET
+        generateValue: true
