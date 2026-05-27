@@ -101,9 +101,9 @@ export default function NotesDialog({ contact, onClose, onContactUpdate }) {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="bg-white w-full max-w-md rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
+      <div className="bg-wati-sidebar border border-wati-border w-full max-w-md rounded-lg shadow-2xl flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-wati-border flex items-center gap-2">
           <StickyNote size={18} className="text-wati-primary" />
           <div className="flex-1">
             <div className="font-semibold text-wati-text">Internal notes</div>
@@ -113,7 +113,7 @@ export default function NotesDialog({ contact, onClose, onContactUpdate }) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-gray-100 text-wati-muted"
+            className="p-1.5 rounded-full hover:bg-wati-panel text-wati-muted"
             title="Close"
           >
             <X size={18} />
@@ -121,14 +121,14 @@ export default function NotesDialog({ contact, onClose, onContactUpdate }) {
         </div>
 
         {/* Add new note */}
-        <div className="p-3 border-b border-gray-100 bg-yellow-50">
+        <div className="p-3 border-b border-wati-border bg-yellow-950/15">
           <textarea
             ref={textareaRef}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDownInput}
             placeholder="Add a new note about this contact…"
-            className="w-full resize-none rounded border border-yellow-200 bg-white px-3 py-2 text-sm text-wati-text outline-none focus:ring-2 focus:ring-yellow-300/70 placeholder-wati-muted"
+            className="w-full resize-none rounded border border-yellow-900/40 bg-wati-sidebar px-3 py-2 text-sm text-yellow-100 outline-none focus:ring-2 focus:ring-yellow-800/70 placeholder-yellow-600/50"
             rows={3}
           />
           <div className="flex items-center justify-between mt-2">
@@ -155,7 +155,7 @@ export default function NotesDialog({ contact, onClose, onContactUpdate }) {
               No notes yet. Add the first note above.
             </div>
           ) : (
-            <ul className="divide-y divide-gray-100">
+            <ul className="divide-y divide-wati-border">
               {notes.map((n) => {
                 const when = n.createdAt ? ist(n.createdAt) : null;
                 return (
@@ -176,7 +176,7 @@ export default function NotesDialog({ contact, onClose, onContactUpdate }) {
                     <button
                       onClick={() => handleDelete(n._id)}
                       title="Delete this note"
-                      className="p-1.5 rounded-full text-wati-muted hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="p-1.5 rounded-full text-wati-muted hover:text-red-500 hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 size={14} />
                     </button>

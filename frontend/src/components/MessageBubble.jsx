@@ -81,7 +81,7 @@ function ReplyQuote({ wamid, allMessages }) {
       onClick={handleScroll}
       className={clsx(
       "mb-1.5 rounded-md overflow-hidden border-l-[3px] max-w-sm cursor-pointer hover:opacity-90 transition-opacity",
-      isCustomer ? "bg-black/5 border-[#128C7E]" : "bg-black/5 border-wati-primary"
+      isCustomer ? "bg-white/5 border-[#128C7E]" : "bg-white/5 border-wati-primary"
     )}>
       <div className="px-2.5 py-1.5 text-xs">
         <div className={clsx(
@@ -90,7 +90,7 @@ function ReplyQuote({ wamid, allMessages }) {
         )}>
           {isCustomer ? 'Customer' : 'You'}
         </div>
-        <div className="truncate text-[13px] text-wati-text/80">{preview}</div>
+        <div className="truncate text-[13px] text-wati-text/85">{preview}</div>
       </div>
     </div>
   );
@@ -124,7 +124,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
   }
 
   return (
-    <div className="rounded-md overflow-hidden bg-white/70 border border-black/5 max-w-[320px]">
+    <div className="rounded-md overflow-hidden bg-wati-sidebar border border-wati-border max-w-[320px]">
       {/* Header */}
       {header.type === 'IMAGE' && headerMediaUrl && (
         <img src={headerMediaUrl} alt="" className="w-full max-h-[200px] object-cover" />
@@ -137,13 +137,13 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
           href={headerMediaUrl}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center gap-2 bg-red-50 px-3 py-2 hover:bg-red-100 border-b border-black/5"
+          className="flex items-center gap-2 bg-red-500/10 px-3 py-2 hover:bg-red-500/20 border-b border-wati-border"
         >
-          <FileText size={20} className="text-red-600" />
+          <FileText size={20} className="text-red-500" />
           <span className="text-sm font-medium truncate">Document</span>
           <button
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); triggerDownload(headerMediaUrl); }}
-            className="ml-auto p-1 rounded-full hover:bg-red-200 text-red-700"
+            className="ml-auto p-1 rounded-full hover:bg-red-500/30 text-red-500"
             title="Download"
           >
             <Download size={16} />
@@ -151,7 +151,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
         </a>
       )}
       {header.type === 'TEXT' && header.text && (
-        <div className="px-3 pt-2 text-sm font-semibold">{header.text}</div>
+        <div className="px-3 pt-2 text-sm font-semibold text-wati-text">{header.text}</div>
       )}
 
       {/* Body */}
@@ -166,7 +166,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
 
       {/* Buttons - rendered as a vertical stack like WhatsApp */}
       {buttons.length > 0 && (
-        <div className="border-t border-black/5 divide-y divide-black/5">
+        <div className="border-t border-wati-border divide-y divide-wati-border">
           {buttons.map((b, i) => {
             if (b.type === 'URL' && b.url) {
               return (
@@ -175,7 +175,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
                   href={b.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-wati-primary hover:bg-black/5"
+                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-wati-primary hover:bg-white/5"
                 >
                   {btnIcon(b.type)} {b.text || 'Open link'}
                 </a>
@@ -186,7 +186,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
                 <a
                   key={i}
                   href={`tel:${b.phone_number}`}
-                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-wati-primary hover:bg-black/5"
+                  className="flex items-center justify-center gap-2 px-3 py-2 text-sm text-wati-primary hover:bg-white/5"
                 >
                   {btnIcon(b.type)} {b.text || 'Call'}
                 </a>
@@ -206,7 +206,7 @@ function TemplateCard({ data, name, fallbackMediaUrl }) {
       )}
 
       {name && (
-        <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-wati-muted bg-black/5 border-t border-black/5">
+        <div className="px-3 py-1.5 text-[10px] uppercase tracking-wide text-wati-muted bg-white/5 border-t border-wati-border">
           📄 Template: {name}
         </div>
       )}
@@ -230,7 +230,7 @@ function MediaPlaceholder({ type, filename }) {
     document: 'w-[220px] h-[40px]',
   };
   return (
-    <div className={`rounded bg-black/5 flex items-center justify-center text-xs text-wati-muted ${sizeByType[type] || 'w-[220px] h-[40px]'}`}>
+    <div className={`rounded bg-white/5 flex items-center justify-center text-xs text-wati-muted ${sizeByType[type] || 'w-[220px] h-[40px]'}`}>
       <span className="animate-pulse">{labelByType[type] || 'Loading…'}</span>
     </div>
   );
@@ -262,27 +262,27 @@ function Media({ m }) {
     const kind = prettyFileKind(m.mediaMime, m.mediaFilename);
     const isPdf = m.mediaMime === 'application/pdf' || /\.pdf$/i.test(m.mediaFilename || '');
     return (
-      <div className="flex items-center gap-3 bg-white/70 rounded px-2 py-2 min-w-[240px] max-w-[300px]">
+      <div className="flex items-center gap-3 bg-wati-sidebar border border-wati-border rounded px-2 py-2 min-w-[240px] max-w-[300px]">
         <a
           href={m.mediaUrl}
           target="_blank"
           rel="noreferrer"
           className={clsx(
             'shrink-0 w-10 h-12 rounded flex items-center justify-center',
-            isPdf ? 'bg-red-100 text-red-600' : 'bg-sky-100 text-sky-600'
+            isPdf ? 'bg-red-500/10 text-red-500' : 'bg-sky-500/10 text-sky-500'
           )}
           title="Open"
         >
           <FileText size={22} />
         </a>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium truncate">{m.mediaFilename || 'Document'}</div>
+          <div className="text-sm font-medium truncate text-wati-text">{m.mediaFilename || 'Document'}</div>
           <div className="text-[11px] text-wati-muted uppercase tracking-wide">{kind}</div>
         </div>
         <button
           onClick={(e) => { e.stopPropagation(); triggerDownload(m.mediaUrl, m.mediaFilename); }}
           title="Download"
-          className="shrink-0 p-2 rounded-full hover:bg-black/10 text-wati-muted"
+          className="shrink-0 p-2 rounded-full hover:bg-white/10 text-wati-muted"
         >
           <Download size={18} />
         </button>
@@ -332,7 +332,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
       {/* Floating Reaction Picker */}
       {reactOpen && (
         <div ref={reactRef} className={clsx(
-          "absolute z-20 -top-8 bg-white rounded-full shadow-lg border border-black/5 px-2 py-1.5 flex gap-1 items-center animate-in fade-in zoom-in-95 duration-150",
+          "absolute z-20 -top-8 bg-wati-sidebar rounded-full shadow-lg border border-wati-border px-2 py-1.5 flex gap-1 items-center animate-in fade-in zoom-in-95 duration-150",
           out ? "right-8" : "left-8"
         )}>
           {QUICK_REACTIONS.map(emj => (
@@ -346,7 +346,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
           ))}
           <button
             onClick={() => { onReact(m, ''); setReactOpen(false); }}
-            className="text-[10px] text-wati-muted px-2 hover:text-gray-800 border-l border-gray-100 ml-1"
+            className="text-[10px] text-wati-muted px-2 hover:text-white border-l border-wati-border ml-1"
             title="Clear reaction"
           >
             ✖
@@ -375,20 +375,20 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
 
         {menuOpen && (
           <div ref={menuRef} className={clsx(
-            "absolute z-10 bg-white rounded-lg shadow-lg border py-1 text-sm min-w-[150px]",
+            "absolute z-10 bg-wati-sidebar rounded-lg shadow-lg border border-wati-border py-1 text-sm min-w-[150px] text-wati-text",
             out ? "right-1" : "left-[calc(100%-2rem)]",
             isNearBottom ? "top-1 -translate-y-full" : "top-6"
           )}>
             <button
               onMouseDown={(e) => e.stopPropagation()}
               onClick={() => { setReactOpen(v => !v); setMenuOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100"
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-wati-panel"
             >
               <Smile size={16} /> React
             </button>
             <button
               onClick={() => { onReply(m); setMenuOpen(false); }}
-              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100"
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-wati-panel"
             >
               <Reply size={16} /> Reply
             </button>
@@ -396,7 +396,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
             {m.mediaUrl && ['image', 'video', 'audio', 'document', 'sticker'].includes(m.type) && (
               <button
                 onClick={() => { triggerDownload(m.mediaUrl, m.mediaFilename); setMenuOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-wati-panel"
               >
                 <Download size={16} /> Download
               </button>
@@ -404,7 +404,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
             {out && !m.deleted && (
               <button
                 onClick={() => { onDelete(m); setMenuOpen(false); }}
-                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-100 text-red-600"
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-wati-panel text-red-500"
               >
                 <Trash2 size={16} /> Delete
               </button>
@@ -431,13 +431,13 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
           <>
             <Media m={m} />
             {m.type === 'template' && (
-              <div className="text-xs bg-black/5 rounded px-2 py-1 inline-block mb-1">📄 Template: {m.templateName}</div>
+              <div className="text-xs bg-white/5 rounded px-2 py-1 inline-block mb-1">📄 Template: {m.templateName}</div>
             )}
             {(m.type === 'interactive' || m.type === 'button') && (m.text || m.caption) ? (
               // Customer tapped a native quick-reply / cta button. Render it as
               // a distinct pill so it looks like an action response.
               <div className="inline-flex items-center text-sm pr-14 mt-1 mb-0.5">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/5 border border-black/5 shadow-sm text-wati-text font-medium">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/5 shadow-sm text-wati-text font-medium">
                   <span className="text-wati-primary font-bold">↳</span> {m.text || m.caption}
                 </span>
               </div>
@@ -451,7 +451,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
 
         {/* Failure banner */}
         {m.status === 'failed' && (
-          <div className="mt-1 mb-1 rounded bg-red-50 border border-red-200 px-2 py-1.5 text-[11px] text-red-700">
+          <div className="mt-1 mb-1 rounded bg-red-500/10 border border-red-500/20 px-2 py-1.5 text-[11px] text-red-500">
             <div className="font-semibold">
               ⚠ {m.failureSummary?.title || 'Failed to deliver'}
             </div>
@@ -481,7 +481,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
               <span
                 key={i}
                 title={r.from === 'agent' ? 'You' : 'Customer'}
-                className="bg-white rounded-full border border-gray-200 shadow-sm px-1.5 py-0.5 text-[13px] leading-none"
+                className="bg-wati-panel rounded-full border border-wati-border shadow-sm px-1.5 py-0.5 text-[13px] leading-none text-wati-text"
               >
                 {r.emoji}
               </span>
@@ -496,7 +496,7 @@ export default function MessageBubble({ message: m, allMessages, onReply, onDele
           <button
             onMouseDown={(e) => e.stopPropagation()}
             onClick={() => { setReactOpen(v => !v); setMenuOpen(false); }}
-            className="p-1.5 rounded-full text-wati-muted hover:bg-black/5 hover:text-gray-700 transition-colors"
+            className="p-1.5 rounded-full text-wati-muted hover:bg-white/5 hover:text-white transition-colors"
             title="React"
           >
             <Smile size={18} />

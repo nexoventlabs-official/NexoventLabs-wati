@@ -90,22 +90,22 @@ export default function TemplateEditor({ onClose, onCreated }) {
   }
 
   return (
-    <div className="absolute inset-0 bg-white flex flex-col z-20">
-      <div className="px-4 py-3 bg-wati-header text-white flex items-center justify-between">
-        <div className="font-semibold">New Template</div>
-        <button onClick={onClose} className="p-2 rounded hover:bg-white/10"><X size={18} /></button>
+    <div className="absolute inset-0 bg-wati-sidebar text-wati-text flex flex-col z-20">
+      <div className="px-4 py-3 bg-wati-panel border-b border-wati-border text-white flex items-center justify-between">
+        <div className="font-semibold text-wati-text">New Template</div>
+        <button onClick={onClose} className="p-2 rounded hover:bg-white/5 text-wati-muted hover:text-white"><X size={18} /></button>
       </div>
       <div className="flex-1 overflow-y-auto thin-scroll p-4 space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs text-wati-muted">Template Name</label>
             <input value={name} onChange={e => setName(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_'))}
-              className="w-full mt-1 px-3 py-2 bg-gray-100 rounded outline-none text-sm" placeholder="e.g. welcome_offer" />
+              className="w-full mt-1 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded outline-none text-sm placeholder-wati-muted" placeholder="e.g. welcome_offer" />
           </div>
           <div>
             <label className="text-xs text-wati-muted">Language</label>
             <select value={language} onChange={e => setLanguage(e.target.value)}
-              className="w-full mt-1 px-3 py-2 bg-gray-100 rounded outline-none text-sm">
+              className="w-full mt-1 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded outline-none text-sm">
               {LANGUAGES.map(l => <option key={l.code} value={l.code}>{l.label}</option>)}
             </select>
           </div>
@@ -117,7 +117,7 @@ export default function TemplateEditor({ onClose, onCreated }) {
             {CATEGORIES.map(c => (
               <button key={c}
                 onClick={() => setCategory(c)}
-                className={`px-3 py-1.5 rounded text-xs border ${category === c ? 'bg-wati-primary text-white border-wati-primary' : 'bg-gray-100 border-gray-200'}`}>
+                className={`px-3 py-1.5 rounded text-xs border ${category === c ? 'bg-wati-primary text-white border-wati-primary' : 'bg-wati-panel border-wati-border text-wati-muted'}`}>
                 {c}
               </button>
             ))}
@@ -130,7 +130,7 @@ export default function TemplateEditor({ onClose, onCreated }) {
             {['NONE', 'TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT'].map(t => (
               <button key={t}
                 onClick={() => setHeaderType(t)}
-                className={`px-3 py-1.5 rounded text-xs border ${headerType === t ? 'bg-wati-primary text-white border-wati-primary' : 'bg-gray-100 border-gray-200'}`}>
+                className={`px-3 py-1.5 rounded text-xs border ${headerType === t ? 'bg-wati-primary text-white border-wati-primary' : 'bg-wati-panel border-wati-border text-wati-muted'}`}>
                 {t}
               </button>
             ))}
@@ -140,11 +140,11 @@ export default function TemplateEditor({ onClose, onCreated }) {
             <input value={headerText} onChange={e => setHeaderText(e.target.value)}
               placeholder="Header text (up to 60 chars)"
               maxLength={60}
-              className="w-full mt-2 px-3 py-2 bg-gray-100 rounded outline-none text-sm" />
+              className="w-full mt-2 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded outline-none text-sm placeholder-wati-muted" />
           )}
           {['IMAGE', 'VIDEO', 'DOCUMENT'].includes(headerType) && (
             <div className="mt-2">
-              <label className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 rounded cursor-pointer text-sm hover:bg-gray-200">
+              <label className="inline-flex items-center gap-2 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded cursor-pointer text-sm hover:bg-white/5">
                 <UploadCloud size={16} />
                 {uploading ? 'Uploading…' : (headerMediaUrl ? 'Replace file' : `Upload ${headerType.toLowerCase()}`)}
                 <input type="file" hidden accept={
@@ -166,13 +166,13 @@ export default function TemplateEditor({ onClose, onCreated }) {
           <label className="text-xs text-wati-muted">Body *</label>
           <textarea value={body} onChange={e => setBody(e.target.value)} rows={5}
             placeholder="Hello {{1}}, your order {{2}} is confirmed."
-            className="w-full mt-1 px-3 py-2 bg-gray-100 rounded outline-none text-sm resize-none" />
+            className="w-full mt-1 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded outline-none text-sm resize-none placeholder-wati-muted" />
         </div>
 
         <div>
           <label className="text-xs text-wati-muted">Footer (optional)</label>
           <input value={footer} onChange={e => setFooter(e.target.value)} maxLength={60}
-            className="w-full mt-1 px-3 py-2 bg-gray-100 rounded outline-none text-sm" />
+            className="w-full mt-1 px-3 py-2 bg-wati-panel border border-wati-border text-wati-text rounded outline-none text-sm placeholder-wati-muted" />
         </div>
 
         <div>
@@ -187,28 +187,28 @@ export default function TemplateEditor({ onClose, onCreated }) {
 
           <div className="space-y-2 mt-2">
             {buttons.map((b, i) => (
-              <div key={i} className="border rounded p-2 space-y-2">
+              <div key={i} className="border border-wati-border rounded p-2 space-y-2 bg-wati-panel/30">
                 <div className="flex items-center gap-2">
                   <select value={b.type} onChange={e => updateButton(i, { type: e.target.value })}
-                    className="px-2 py-1.5 bg-gray-100 rounded text-xs">
+                    className="px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-xs outline-none">
                     <option value="QUICK_REPLY">Quick reply</option>
                     <option value="URL">URL</option>
                     <option value="PHONE_NUMBER">Call</option>
                   </select>
                   <input value={b.text || ''} onChange={e => updateButton(i, { text: e.target.value })}
                     placeholder="Button text" maxLength={25}
-                    className="flex-1 px-2 py-1.5 bg-gray-100 rounded text-sm" />
+                    className="flex-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm outline-none placeholder-wati-muted" />
                   {b.type === 'URL' && (
                     <input value={b.url || ''} onChange={e => updateButton(i, { url: e.target.value })}
                       placeholder="https://…"
-                      className="flex-1 px-2 py-1.5 bg-gray-100 rounded text-sm" />
+                      className="flex-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm outline-none placeholder-wati-muted" />
                   )}
                   {b.type === 'PHONE_NUMBER' && (
                     <input value={b.phone_number || ''} onChange={e => updateButton(i, { phone_number: e.target.value })}
                       placeholder="+919999999999"
-                      className="flex-1 px-2 py-1.5 bg-gray-100 rounded text-sm" />
+                      className="flex-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm outline-none placeholder-wati-muted" />
                   )}
-                  <button onClick={() => removeButton(i)} className="p-1 text-red-500 hover:bg-red-50 rounded">
+                  <button onClick={() => removeButton(i)} className="p-1 text-red-500 hover:bg-red-500/10 rounded">
                     <Trash2 size={14} />
                   </button>
                 </div>
@@ -223,7 +223,7 @@ export default function TemplateEditor({ onClose, onCreated }) {
                       rows={2}
                       maxLength={1000}
                       placeholder={`e.g. Great! Our team will call you within 24h.`}
-                      className="w-full mt-1 px-2 py-1.5 bg-gray-50 rounded text-sm resize-none border"
+                      className="w-full mt-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm resize-none outline-none placeholder-wati-muted"
                     />
                   </div>
                 )}
@@ -232,15 +232,15 @@ export default function TemplateEditor({ onClose, onCreated }) {
           </div>
         </div>
 
-        {errorMsg && <div className="text-sm text-red-600 bg-red-50 rounded p-2">{errorMsg}</div>}
+        {errorMsg && <div className="text-sm text-red-500 bg-red-500/10 border border-red-500/20 rounded p-2">{errorMsg}</div>}
       </div>
 
-      <div className="px-4 py-3 border-t flex items-center justify-end gap-2 bg-gray-50">
-        <button onClick={onClose} className="px-4 py-2 text-sm bg-gray-200 rounded">Cancel</button>
+      <div className="px-4 py-3 border-t border-wati-border flex items-center justify-end gap-2 bg-wati-sidebar">
+        <button onClick={onClose} className="px-4 py-2 text-sm bg-wati-panel border border-wati-border hover:bg-white/5 text-wati-text rounded">Cancel</button>
         <button onClick={() => submit(false)} disabled={submitting}
-          className="px-4 py-2 text-sm bg-gray-700 text-white rounded disabled:opacity-50">Save as Draft</button>
+          className="px-4 py-2 text-sm bg-white/10 hover:bg-white/15 text-white rounded disabled:opacity-50">Save as Draft</button>
         <button onClick={() => submit(true)} disabled={submitting}
-          className="px-4 py-2 text-sm bg-wati-primary text-white rounded disabled:opacity-50">
+          className="px-4 py-2 text-sm bg-wati-primary hover:bg-wati-primaryDark text-white rounded disabled:opacity-50">
           {submitting ? 'Submitting…' : 'Create & Verify'}
         </button>
       </div>

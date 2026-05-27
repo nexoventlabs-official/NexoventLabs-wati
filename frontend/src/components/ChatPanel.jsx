@@ -266,10 +266,10 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
           <img 
             src="/image.png" 
             alt="Welcome" 
-            className="w-72 max-w-[80%] mx-auto mb-8 opacity-90 mix-blend-multiply"
+            className="w-72 max-w-[80%] mx-auto mb-8 opacity-60"
           />
-          <div className="text-2xl font-light text-[#41525d]">Select a contact to start chatting</div>
-          <div className="text-[14px] mt-4 text-[#8696a0]">
+          <div className="text-2xl font-light text-wati-text">Select a contact to start chatting</div>
+          <div className="text-[14px] mt-4 text-wati-muted">
             Inbound WhatsApp messages appear here in real time. Click on a chat from the sidebar to view the conversation.
           </div>
         </div>
@@ -292,7 +292,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
         </div>
       )}
       {/* Header */}
-      <div className="bg-wati-panel px-4 py-2 flex items-center gap-3 border-b border-[#d1d7db]">
+      <div className="bg-wati-panel px-4 py-2 flex items-center gap-3 border-b border-wati-border">
         <Avatar name={contact.name || contact.profileName || contact.waId} url={contact.profilePicUrl} size={40} />
         <button
           onClick={onToggleDetails}
@@ -315,7 +315,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
         <button
           onClick={() => setNotesOpen(true)}
           title="Internal notes"
-          className="p-2 rounded-full hover:bg-gray-200 text-wati-muted relative"
+          className="p-2 rounded-full hover:bg-wati-sidebar text-wati-muted relative"
         >
           <StickyNote size={20} />
           {(contact.notes?.length > 0 || contact.comment) && (
@@ -326,7 +326,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
         <select
           value={contact.callStatus || 'none'}
           onChange={handleStatusChange}
-          className="text-xs bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-wati-primary"
+          className="text-xs bg-wati-panel border border-wati-border text-wati-text rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-wati-primary"
         >
           {CALL_STATUSES.map(s => (
             <option key={s.value} value={s.value}>{s.label}</option>
@@ -338,7 +338,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
         <button
           onClick={handleClearChat}
           title="Clear chat"
-          className="p-2 rounded-full hover:bg-red-50 text-wati-muted hover:text-red-600 transition-colors"
+          className="p-2 rounded-full hover:bg-red-500/10 text-wati-muted hover:text-red-500 transition-colors"
         >
           <Trash2 size={18} />
         </button>
@@ -350,7 +350,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
             'p-2 rounded-full transition-colors',
             detailsOpen
               ? 'bg-wati-primary/10 text-wati-primary'
-              : 'hover:bg-gray-200 text-wati-muted'
+              : 'hover:bg-wati-sidebar text-wati-muted'
           )}
         >
           {detailsOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
@@ -370,7 +370,7 @@ export default function ChatPanel({ contact, onContactUpdate, onOpenTemplates, d
       <div ref={listRef} className="flex-1 overflow-y-auto thin-scroll chat-bg px-3 sm:px-6 py-4">
         {loading ? (
           <div className="flex justify-center py-6">
-             <div className="bg-white/80 shadow-sm rounded-full p-2 text-wati-primary">
+             <div className="bg-wati-sidebar shadow-sm rounded-full p-2 text-wati-primary">
                <Loader2 className="animate-spin" size={20} />
              </div>
           </div>

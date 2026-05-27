@@ -9,7 +9,7 @@ export default function MessageList({ messages, unreadData, onReply, onDelete, o
     if (!lastDate || !sameDay(lastDate, m.createdAt)) {
       items.push(
         <div key={`sep-${m._id}`} className="flex justify-center my-3">
-          <span className="text-[11px] bg-white/90 px-3 py-1 rounded shadow text-wati-muted font-medium">
+          <span className="text-[11px] bg-wati-sidebar/90 border border-wati-border px-3 py-1 rounded shadow text-wati-muted font-medium">
             {formatDaySeparator(m.createdAt)}
           </span>
         </div>
@@ -20,7 +20,7 @@ export default function MessageList({ messages, unreadData, onReply, onDelete, o
     if (unreadData && m._id === unreadData.msgId) {
       items.push(
         <div key="unread-divider" className="flex justify-center my-3">
-          <span className="text-[11px] bg-white/90 px-3 py-1 rounded-lg shadow-sm text-wati-primaryDark font-semibold uppercase tracking-wide border border-black/5">
+          <span className="text-[11px] bg-wati-sidebar/90 px-3 py-1 rounded-lg shadow-sm text-wati-primary font-semibold uppercase tracking-wide border border-wati-border">
             {unreadData.count} Unread Message{unreadData.count > 1 ? 's' : ''}
           </span>
         </div>

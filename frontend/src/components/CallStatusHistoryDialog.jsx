@@ -28,11 +28,11 @@ export default function CallStatusHistoryDialog({ contact, onClose }) {
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col"
+        className="bg-wati-sidebar border border-wati-border rounded-lg shadow-2xl w-full max-w-md max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-wati-border">
           <History size={18} className="text-wati-primary" />
           <div className="flex-1">
             <div className="font-semibold text-wati-text">Call status history</div>
@@ -42,7 +42,7 @@ export default function CallStatusHistoryDialog({ contact, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-gray-100 text-wati-muted"
+            className="p-1.5 rounded-full hover:bg-wati-panel text-wati-muted"
             title="Close"
           >
             <X size={18} />
@@ -60,15 +60,15 @@ export default function CallStatusHistoryDialog({ contact, onClose }) {
               </div>
             </div>
           ) : (
-            <ol className="relative border-l-2 border-gray-200 ml-2 pl-5 space-y-4">
+            <ol className="relative border-l-2 border-wati-border ml-2 pl-5 space-y-4">
               {entries.map((entry, idx) => (
                 <li key={String(entry._id || idx)} className="relative">
-                  <span className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-wati-primary ring-4 ring-white" />
+                  <span className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-wati-primary ring-4 ring-wati-sidebar" />
                   <div className="flex flex-wrap items-baseline gap-2">
                     <span
                       className={
                         'text-[13px] px-2 py-0.5 rounded font-medium ' +
-                        (statusColor[entry.status] || 'bg-gray-100 text-gray-700')
+                        (statusColor[entry.status] || 'bg-wati-panel text-wati-text border border-wati-border')
                       }
                     >
                       {labelOf(entry.status)}
@@ -91,7 +91,7 @@ export default function CallStatusHistoryDialog({ contact, onClose }) {
         </div>
 
         {/* Footer */}
-        <div className="px-4 py-2.5 border-t text-[11px] text-wati-muted bg-gray-50 rounded-b-lg">
+        <div className="px-4 py-2.5 border-t border-wati-border text-[11px] text-wati-muted bg-wati-panel/30 rounded-b-lg">
           Audit log is append-only. It clears when you Clear chat.
         </div>
       </div>

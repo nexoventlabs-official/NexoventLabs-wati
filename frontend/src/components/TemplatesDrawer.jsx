@@ -6,24 +6,24 @@ import { socket } from '../api/socket';
 import TemplateEditor from './TemplateEditor.jsx';
 
 const STATUS_BADGE = {
-  APPROVED: { icon: <CheckCircle2 size={14} />, cls: 'bg-green-100 text-green-700 border-green-300' },
-  PENDING: { icon: <Clock size={14} />, cls: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-  REJECTED: { icon: <XCircle size={14} />, cls: 'bg-red-100 text-red-700 border-red-300' },
-  DRAFT: { icon: <Clock size={14} />, cls: 'bg-gray-100 text-gray-700 border-gray-300' },
-  PAUSED: { icon: <Clock size={14} />, cls: 'bg-orange-100 text-orange-700 border-orange-300' },
-  DISABLED: { icon: <XCircle size={14} />, cls: 'bg-red-100 text-red-700 border-red-300' },
+  APPROVED: { icon: <CheckCircle2 size={14} />, cls: 'bg-green-500/10 text-green-500 border-green-500/20' },
+  PENDING: { icon: <Clock size={14} />, cls: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
+  REJECTED: { icon: <XCircle size={14} />, cls: 'bg-red-500/10 text-red-500 border-red-500/20' },
+  DRAFT: { icon: <Clock size={14} />, cls: 'bg-white/5 text-wati-muted border-wati-border' },
+  PAUSED: { icon: <Clock size={14} />, cls: 'bg-orange-500/10 text-orange-500 border-orange-500/20' },
+  DISABLED: { icon: <XCircle size={14} />, cls: 'bg-red-500/10 text-red-500 border-red-500/20' },
 };
 
 function TemplateSkeleton() {
   return (
-    <div className="border border-gray-200 rounded-lg bg-white p-3 animate-pulse flex items-center gap-3">
-      <div className="w-4 h-4 rounded bg-gray-200 shrink-0"></div>
+    <div className="border border-wati-border rounded-lg bg-wati-sidebar p-3 animate-pulse flex items-center gap-3">
+      <div className="w-4 h-4 rounded bg-white/5 shrink-0"></div>
       <div className="flex-1">
-        <div className="h-3.5 bg-gray-200 rounded w-1/3 mb-1.5"></div>
-        <div className="h-2 bg-gray-200 rounded w-1/4"></div>
+        <div className="h-3.5 bg-white/5 rounded w-1/3 mb-1.5"></div>
+        <div className="h-2 bg-white/5 rounded w-1/4"></div>
       </div>
-      <div className="w-[80px] h-5 rounded bg-gray-200 shrink-0"></div>
-      <div className="w-6 h-6 rounded bg-gray-200 shrink-0"></div>
+      <div className="w-[80px] h-5 rounded bg-white/5 shrink-0"></div>
+      <div className="w-6 h-6 rounded bg-white/5 shrink-0"></div>
     </div>
   );
 }
@@ -41,8 +41,8 @@ function TemplatePreview({ t }) {
   }
 
   return (
-    <div className="mt-2 rounded-lg p-2.5 bg-wati-bg border border-black/5">
-      <div className="rounded-md overflow-hidden bg-white shadow-sm max-w-full">
+    <div className="mt-2 rounded-lg p-2.5 bg-wati-bg border border-wati-border">
+      <div className="rounded-md overflow-hidden bg-wati-sidebar shadow-sm max-w-full">
         {/* Header */}
         {header.type === 'IMAGE' && header.mediaUrl && (
           <img src={header.mediaUrl} alt="" className="w-full max-h-[160px] object-cover" />
@@ -55,14 +55,14 @@ function TemplatePreview({ t }) {
             href={header.mediaUrl}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-2 bg-red-50 px-3 py-2 hover:bg-red-100 border-b border-black/5"
+            className="flex items-center gap-2 bg-red-500/10 px-3 py-2 hover:bg-red-500/20 border-b border-wati-border"
           >
-            <FileText size={18} className="text-red-600 shrink-0" />
-            <span className="text-xs font-medium truncate">Document</span>
+            <FileText size={18} className="text-red-500 shrink-0" />
+            <span className="text-xs font-medium truncate text-wati-text">Document</span>
           </a>
         )}
         {header.type === 'TEXT' && header.text && (
-          <div className="px-3 pt-2 text-sm font-semibold break-words">{header.text}</div>
+          <div className="px-3 pt-2 text-sm font-semibold break-words text-wati-text">{header.text}</div>
         )}
 
         {/* Body */}
@@ -84,7 +84,7 @@ function TemplatePreview({ t }) {
           {buttons.map((b, i) => (
             <div
               key={i}
-              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-wati-primary bg-white rounded-md shadow-sm"
+              className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-wati-primary bg-wati-panel border border-wati-border rounded-md shadow-sm"
             >
               {btnIcon(b.type)}
               <span className="truncate">{b.text || (b.type === 'URL' ? 'Open link' : 'Button')}</span>
@@ -205,19 +205,19 @@ export default function TemplatesDrawer({ onClose, onPick }) {
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
     >
       <div
-        className="w-full max-w-lg bg-white h-full flex flex-col shadow-2xl relative"
+        className="w-full max-w-lg bg-wati-sidebar border-l border-wati-border h-full flex flex-col shadow-2xl relative"
         onMouseDown={(e) => e.stopPropagation()}
       >
-        <div className="px-4 py-3 bg-wati-panel text-wati-text flex items-center justify-between border-b border-[#d1d7db]">
+        <div className="px-4 py-3 bg-wati-panel text-wati-text flex items-center justify-between border-b border-wati-border">
           <div className="font-semibold text-lg">Templates</div>
           <div className="flex items-center gap-1 text-wati-muted">
             <button onClick={sync} disabled={loading} title="Sync from Meta"
-              className="p-2 rounded-full hover:bg-black/5 transition-colors">
+              className="p-2 rounded-full hover:bg-white/5 transition-colors">
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             </button>
             <button onClick={() => setEditing(true)} title="New template"
-              className="p-2 rounded-full hover:bg-black/5 transition-colors"><Plus size={20} /></button>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-black/5 transition-colors"><X size={20} /></button>
+              className="p-2 rounded-full hover:bg-white/5 transition-colors"><Plus size={20} /></button>
+            <button onClick={onClose} className="p-2 rounded-full hover:bg-white/5 transition-colors"><X size={20} /></button>
           </div>
         </div>
 
@@ -243,8 +243,8 @@ export default function TemplatesDrawer({ onClose, onPick }) {
               <div
                 key={t._id}
                 className={clsx(
-                  'border rounded-lg bg-white overflow-hidden transition-colors',
-                  isPicked ? 'border-wati-primary ring-1 ring-wati-primary/40' : 'border-gray-200'
+                  'border rounded-lg bg-wati-sidebar overflow-hidden transition-colors',
+                  isPicked ? 'border-wati-primary ring-1 ring-wati-primary/40' : 'border-wati-border'
                 )}
               >
                 {/* Compact row: name + select + view */}
@@ -266,7 +266,7 @@ export default function TemplatesDrawer({ onClose, onPick }) {
                   </span>
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : t._id)}
-                    className="p-1.5 rounded hover:bg-gray-100 text-wati-muted shrink-0"
+                    className="p-1.5 rounded hover:bg-wati-panel text-wati-muted shrink-0"
                     title={isExpanded ? 'Hide preview' : 'View preview'}
                   >
                     {isExpanded ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -275,10 +275,10 @@ export default function TemplatesDrawer({ onClose, onPick }) {
 
                 {/* Expanded area: preview + non-send actions */}
                 {isExpanded && (
-                  <div className="px-3 pb-3 border-t bg-gray-50/50">
+                  <div className="px-3 pb-3 border-t border-wati-border bg-wati-panel/30">
                     <TemplatePreview t={t} />
                     {t.rejectedReason && (
-                      <div className="mt-2 text-xs text-red-600">Rejected: {t.rejectedReason}</div>
+                      <div className="mt-2 text-xs text-red-500">Rejected: {t.rejectedReason}</div>
                     )}
                     <div className="mt-3 flex items-center gap-2">
                       {t.status === 'DRAFT' && (
@@ -289,12 +289,12 @@ export default function TemplatesDrawer({ onClose, onPick }) {
                       )}
                       {t.status !== 'DRAFT' && t.status !== 'APPROVED' && (
                         <button onClick={() => refresh(t._id)} disabled={busyId === t._id}
-                          className="px-3 py-1.5 text-xs bg-gray-200 text-wati-text rounded flex items-center gap-1 disabled:opacity-60">
+                          className="px-3 py-1.5 text-xs bg-wati-panel text-wati-text border border-wati-border rounded flex items-center gap-1 disabled:opacity-60 hover:bg-white/5">
                           <RefreshCw size={14} className={busyId === t._id ? 'animate-spin' : ''} /> Refresh
                         </button>
                       )}
                       <button onClick={() => remove(t._id)} disabled={busyId === t._id}
-                        className="px-3 py-1.5 text-xs text-red-600 hover:bg-red-50 rounded flex items-center gap-1 ml-auto disabled:opacity-60">
+                        className="px-3 py-1.5 text-xs text-red-500 hover:bg-red-500/10 rounded flex items-center gap-1 ml-auto disabled:opacity-60">
                         <Trash2 size={14} /> Delete
                       </button>
                     </div>
@@ -307,7 +307,7 @@ export default function TemplatesDrawer({ onClose, onPick }) {
 
         {/* Floating Send button - appears when a template is picked via checkbox */}
         {picked && (
-          <div className="border-t bg-white p-3 flex items-center gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.04)]">
+          <div className="border-t border-wati-border bg-wati-sidebar p-3 flex items-center gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.2)]">
             <div className="flex-1 min-w-0">
               <div className="text-[11px] text-wati-muted">Selected template</div>
               <div className="text-sm font-medium truncate">{picked.name}</div>

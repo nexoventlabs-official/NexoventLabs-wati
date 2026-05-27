@@ -7,15 +7,15 @@ export default {
         wati: {
           primary: '#00a884', // Classic WhatsApp Accent
           primaryDark: '#008069', // Classic WhatsApp Teal
-          bg: '#e5ddd5', // WhatsApp Chat background
-          sidebar: '#ffffff',
-          panel: '#f0f2f5', // WhatsApp Panel Header
-          bubbleOut: '#dcf8c6', // WhatsApp Sent Bubble
-          bubbleIn: '#ffffff', // WhatsApp Received Bubble
-          text: '#111b21',
-          muted: '#54656f',
-          header: '#f0f2f5',
-          border: '#d1d7db',
+          bg: '#0b141a', // WhatsApp Chat background (dark)
+          sidebar: '#000000', // WhatsApp Sidebar (dark - pure black)
+          panel: '#202c33', // WhatsApp Panel Header (dark)
+          bubbleOut: '#005c4b', // WhatsApp Sent Bubble (dark)
+          bubbleIn: '#202c33', // WhatsApp Received Bubble (dark)
+          text: '#e9edef', // White/Light Text (dark)
+          muted: '#8696a0', // Muted Text (dark)
+          header: '#202c33',
+          border: '#222e35', // Dark border (dark)
         },
         admin: {
           accent: '#4f46e5', // Indigo-600 for a more premium look

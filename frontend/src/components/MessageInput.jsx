@@ -190,8 +190,8 @@ export default function MessageInput({
 
   if (disabled) {
     return (
-      <div className="px-4 py-3 bg-wati-panel border-t border-[#d1d7db] flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 text-sm text-red-700">
+      <div className="px-4 py-3 bg-wati-panel border-t border-wati-border flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm text-red-500">
           <Lock size={16} />
           24-hour conversation window is closed. You can only send an approved template.
         </div>
@@ -206,10 +206,10 @@ export default function MessageInput({
   }
 
   return (
-    <div className="bg-wati-panel border-t border-[#d1d7db]">
+    <div className="bg-wati-panel border-t border-wati-border">
       {/* Reply preview */}
       {replyTo && (
-        <div className="px-4 py-2 bg-white/70 border-b flex items-start gap-2">
+        <div className="px-4 py-2 bg-wati-sidebar border-b border-wati-border flex items-start gap-2">
           <div className="flex-1 pl-2 border-l-4 border-wati-primary">
             <div className="text-xs font-medium text-wati-primary">
               Replying to {replyTo.direction === 'inbound' ? 'customer' : 'yourself'}
@@ -218,29 +218,29 @@ export default function MessageInput({
               {replyTo.text || replyTo.caption || `[${replyTo.type}]`}
             </div>
           </div>
-          <button onClick={onCancelReply} className="p-1 text-wati-muted hover:bg-gray-200 rounded"><X size={16} /></button>
+          <button onClick={onCancelReply} className="p-1 text-wati-muted hover:bg-wati-panel rounded"><X size={16} /></button>
         </div>
       )}
 
       {/* Pending file preview */}
       {pendingFile && (
-        <div className="px-4 py-3 bg-white border-b flex items-center gap-3">
+        <div className="px-4 py-3 bg-wati-sidebar border-b border-wati-border flex items-center gap-3">
           {pendingFile.type === 'image' && <img src={pendingFile.previewUrl} className="w-16 h-16 object-cover rounded" />}
           {pendingFile.type === 'video' && <video src={pendingFile.previewUrl} className="w-20 h-16 rounded" />}
           {pendingFile.type === 'audio' && <audio src={pendingFile.previewUrl} controls className="h-10" />}
-          {pendingFile.type === 'document' && <div className="w-16 h-16 rounded bg-gray-100 flex items-center justify-center"><FileIcon /></div>}
+          {pendingFile.type === 'document' && <div className="w-16 h-16 rounded bg-wati-panel border border-wati-border flex items-center justify-center"><FileIcon /></div>}
           <div className="flex-1">
-            <div className="text-sm font-medium">{pendingFile.file.name}</div>
+            <div className="text-sm font-medium text-wati-text">{pendingFile.file.name}</div>
             {pendingFile.type !== 'document' && (
               <input
                 value={caption}
                 onChange={e => setCaption(e.target.value)}
                 placeholder="Add a caption…"
-                className="w-full mt-1 px-2 py-1 bg-gray-100 rounded text-sm outline-none"
+                className="w-full mt-1 px-2 py-1 bg-wati-panel border border-wati-border text-wati-text rounded text-sm outline-none placeholder-wati-muted"
               />
             )}
           </div>
-          <button onClick={() => { URL.revokeObjectURL(pendingFile.previewUrl); setPendingFile(null); setCaption(''); }} className="p-2 hover:bg-gray-100 rounded"><X size={18} /></button>
+          <button onClick={() => { URL.revokeObjectURL(pendingFile.previewUrl); setPendingFile(null); setCaption(''); }} className="p-2 hover:bg-wati-panel rounded"><X size={18} /></button>
           <button
             onClick={confirmSendFile}
             disabled={uploading}
@@ -261,17 +261,17 @@ export default function MessageInput({
       {/* Attach menu */}
       {showAttach && (
         <div className="relative">
-          <div ref={attachMenuRef} className="absolute bottom-2 left-2 bg-white rounded-lg shadow-lg border py-2 w-56 z-10">
-            <button onClick={() => pickFile('image')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-sm">
+          <div ref={attachMenuRef} className="absolute bottom-2 left-2 bg-wati-sidebar rounded-lg shadow-lg border border-wati-border py-2 w-56 z-10 text-wati-text">
+            <button onClick={() => pickFile('image')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-wati-panel text-sm">
               <ImageIcon size={18} className="text-pink-500" /> Photo
             </button>
-            <button onClick={() => pickFile('video')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-sm">
+            <button onClick={() => pickFile('video')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-wati-panel text-sm">
               <Video size={18} className="text-purple-500" /> Video
             </button>
-            <button onClick={() => pickFile('document')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-sm">
+            <button onClick={() => pickFile('document')} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-wati-panel text-sm">
               <Paperclip size={18} className="text-blue-500" /> Document
             </button>
-            <button onClick={() => { setShowAttach(false); onOpenTemplates(); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-sm">
+            <button onClick={() => { setShowAttach(false); onOpenTemplates(); }} className="w-full flex items-center gap-3 px-3 py-2 hover:bg-wati-panel text-sm">
               <FileText size={18} className="text-green-600" /> Template
             </button>
           </div>
@@ -282,14 +282,14 @@ export default function MessageInput({
         <button
           ref={attachBtnRef}
           onClick={() => { setShowAttach(v => !v); setShowEmoji(false); }}
-          className={clsx('p-2 rounded-full', showAttach ? 'bg-wati-primary text-white' : 'text-wati-muted hover:bg-gray-200')}
+          className={clsx('p-2 rounded-full', showAttach ? 'bg-wati-primary text-white' : 'text-wati-muted hover:bg-wati-panel')}
           title="Attach"
         >
           <Plus size={22} />
         </button>
         <button
           onClick={onOpenTemplates}
-          className="p-2 rounded-full text-wati-muted hover:bg-gray-200"
+          className="p-2 rounded-full text-wati-muted hover:bg-wati-panel"
           title="Templates"
         >
           <FileText size={22} />
@@ -297,7 +297,7 @@ export default function MessageInput({
         <button
           ref={emojiBtnRef}
           onClick={() => { setShowEmoji(v => !v); setShowAttach(false); }}
-          className="p-2 rounded-full text-wati-muted hover:bg-gray-200"
+          className="p-2 rounded-full text-wati-muted hover:bg-wati-panel"
           title="Emoji"
         >
           <Smile size={22} />
@@ -305,7 +305,7 @@ export default function MessageInput({
 
         {/* Recording view */}
         {recording ? (
-          <div className="flex-1 flex items-center gap-3 bg-white rounded-full px-4 py-2">
+          <div className="flex-1 flex items-center gap-3 bg-wati-sidebar border border-wati-border rounded-full px-4 py-2 text-wati-text">
             <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
             <span className="text-sm font-mono">Recording… {Math.floor(recordingTime/60)}:{String(recordingTime%60).padStart(2,'0')}</span>
             <div className="flex-1" />
@@ -321,7 +321,7 @@ export default function MessageInput({
             onChange={onTyping}
             onKeyDown={handleKey}
             placeholder="Type a message"
-            className="flex-1 resize-none bg-white rounded-3xl px-4 py-2 text-sm outline-none max-h-28"
+            className="flex-1 resize-none bg-wati-sidebar border border-wati-border text-wati-text rounded-3xl px-4 py-2 text-sm outline-none max-h-28 placeholder-wati-muted"
           />
         )}
 

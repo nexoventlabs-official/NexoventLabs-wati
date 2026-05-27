@@ -29,7 +29,7 @@ import CallStatusHistoryDialog from './CallStatusHistoryDialog.jsx';
 function Field({ icon: Icon, label, children, border = true }) {
   if (!children) return null;
   return (
-    <div className={clsx("py-3 px-5 flex gap-4", border && "border-b border-gray-100")}>
+    <div className={clsx("py-3 px-5 flex gap-4", border && "border-b border-wati-border")}>
       {Icon && <div className="mt-0.5 text-wati-muted/70"><Icon size={20} strokeWidth={1.5} /></div>}
       <div className="flex-1 min-w-0">
         <div className="text-[15px] text-wati-text break-words leading-tight">{children}</div>
@@ -166,18 +166,20 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
   const latestNote = noteEntries[0] || null;
 
   return (
-    <aside className="w-[22rem] shrink-0 bg-[#f0f2f5] border-l border-gray-200 flex flex-col h-full z-10">
+    <aside className="w-[22rem] shrink-0 bg-wati-panel border-l border-wati-border flex flex-col h-full z-10">
       {/* Header / cover banner */}
-      <div className="bg-white shadow-sm pb-5 relative shrink-0">
-        <div
-          className="relative h-28 bg-cover bg-center"
-          style={{ backgroundImage: 'url(/banner.png)' }}
-        >
-          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+      <div className="bg-wati-sidebar shadow-sm pb-5 relative shrink-0">
+        <div className="relative h-28 bg-black flex items-center justify-center overflow-hidden shrink-0">
+          <img
+            src="/banner1.png"
+            alt="Nexovent Labs - Wati"
+            className="w-full h-full object-contain"
+          />
+          <div className="absolute inset-0 bg-black/15 pointer-events-none" />
           {onClose && (
             <button
               onClick={onClose}
-              className="absolute top-3 right-3 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors backdrop-blur-sm"
+              className="absolute top-3 right-3 p-2 rounded-full bg-black/40 hover:bg-black/60 text-white transition-colors backdrop-blur-sm z-20"
               title="Close details"
             >
               <X size={18} />
@@ -189,7 +191,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
             name={displayName}
             url={contact.profilePicUrl}
             size={96}
-            className="ring-4 ring-white shadow-sm"
+            className="ring-4 ring-wati-sidebar shadow-sm"
           />
           <div className="mt-3 text-[19px] font-medium text-wati-text flex items-center gap-2 text-center break-words max-w-full">
             {editingName ? (
@@ -207,7 +209,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
                   }}
                   disabled={savingName}
                   placeholder="Enter name"
-                  className="border border-gray-300 rounded px-2 py-0.5 text-[16px] font-medium outline-none focus:border-wati-primary min-w-0 max-w-[12rem]"
+                  className="border border-wati-border bg-wati-panel text-wati-text rounded px-2 py-0.5 text-[16px] font-medium outline-none focus:border-wati-primary min-w-0 max-w-[12rem]"
                 />
                 <button
                   onClick={saveName}
@@ -223,7 +225,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
                     setEditingName(false);
                   }}
                   disabled={savingName}
-                  className="p-1.5 rounded-full hover:bg-gray-200 text-wati-muted disabled:opacity-50"
+                  className="p-1.5 rounded-full hover:bg-wati-panel text-wati-muted disabled:opacity-50"
                   title="Cancel"
                 >
                   <X size={14} />
@@ -237,7 +239,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
                     setNameDraft(contact.name || contact.profileName || '');
                     setEditingName(true);
                   }}
-                  className="p-1 rounded-full hover:bg-gray-100 text-wati-muted"
+                  className="p-1 rounded-full hover:bg-wati-panel text-wati-muted"
                   title="Edit name"
                 >
                   <Pencil size={14} />
@@ -249,7 +251,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
             <a href={`tel:+${String(contact.waId).replace(/\D/g, '')}`} className="hover:underline">
               {formatPhone(contact.waId)}
             </a>
-            <span className="text-gray-300">•</span>
+            <span className="text-wati-muted/30">•</span>
             <span className="flex items-center gap-1">
               {country.iso2 && <CountryFlag iso2={country.iso2} emoji={country.flag} size={14} />}
               {country.name}
@@ -262,7 +264,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
       <div className="flex-1 overflow-y-auto thin-scroll pb-6">
         
         {/* Card 1: Chat Meta */}
-        <div className="bg-white shadow-sm mt-2 py-1">
+        <div className="bg-wati-sidebar border-y border-wati-border mt-2 py-1">
           {contact.profileName && contact.profileName !== contact.name && (
             <Field icon={Tag} label="WhatsApp profile name">
               {contact.profileName}
@@ -289,8 +291,8 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
                   className={clsx(
                     'font-mono font-medium px-2 py-0.5 rounded text-[13px]',
                     ws.danger
-                      ? 'bg-red-50 text-red-700 animate-pulse'
-                      : 'bg-green-50 text-green-700'
+                      ? 'bg-red-500/10 text-red-500 animate-pulse'
+                      : 'bg-green-500/10 text-green-500'
                   )}
                 >
                   {formatCountdown(ws.remainingMs)}
@@ -302,7 +304,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
         </div>
 
         {/* Card 2: Acquisition & Status */}
-        <div className="bg-white shadow-sm mt-2 py-1">
+        <div className="bg-wati-sidebar border-y border-wati-border mt-2 py-1">
           <Field icon={Globe2} label="Acquisition Source">
             <span className="inline-flex items-center gap-2 font-medium">
               <ChannelIcon source={contact.source} size={20} />
@@ -354,7 +356,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
         </div>
 
         {/* Card 3: Internal Notes */}
-        <div className="bg-white shadow-sm mt-2 px-5 py-4">
+        <div className="bg-wati-sidebar border-y border-wati-border mt-2 px-5 py-4">
           <div className="flex items-center justify-between text-[14px] text-wati-muted font-medium mb-3">
             <div className="flex items-center gap-2">
               <StickyNote size={18} strokeWidth={1.5} /> 
@@ -373,11 +375,11 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
             className="w-full text-left outline-none"
           >
             {latestNote ? (
-              <div className="bg-[#fff9c4] border border-[#f5eb9d] rounded-lg p-3 hover:bg-[#fff59d] transition-colors shadow-sm">
-                <div className="text-yellow-900 text-[14px] whitespace-pre-wrap break-words line-clamp-3">
+              <div className="bg-yellow-950/25 border border-yellow-900/40 rounded-lg p-3 hover:bg-yellow-950/35 transition-colors shadow-sm">
+                <div className="text-yellow-200/90 text-[14px] whitespace-pre-wrap break-words line-clamp-3">
                   {latestNote.text}
                 </div>
-                <div className="text-[11px] text-yellow-700/80 mt-2 flex items-center gap-1.5 font-medium">
+                <div className="text-[11px] text-yellow-400/60 mt-2 flex items-center gap-1.5 font-medium">
                   {latestNote.createdAt
                     ? ist(latestNote.createdAt).format('DD MMM YYYY, h:mm A')
                     : ''}
@@ -387,7 +389,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
                 </div>
               </div>
             ) : (
-              <div className="text-[13px] text-wati-muted italic border-2 border-dashed border-gray-200 rounded-lg p-3 text-center hover:bg-gray-50 transition-colors">
+              <div className="text-[13px] text-wati-muted italic border-2 border-dashed border-wati-border rounded-lg p-3 text-center hover:bg-white/5 transition-colors">
                 No notes yet — click to add one
               </div>
             )}
@@ -397,7 +399,7 @@ export default function ContactDetailsPanel({ contact, onClose, onContactUpdate 
         {/* Meta */}
         <div className="mt-4 text-center">
           <div className="text-[11px] text-wati-muted flex justify-center items-center gap-1.5">
-             <Hash size={12} /> Contact ID: <code className="bg-black/5 px-1 rounded">{contact._id}</code>
+             <Hash size={12} /> Contact ID: <code className="bg-white/5 px-1 rounded">{contact._id}</code>
           </div>
         </div>
       </div>

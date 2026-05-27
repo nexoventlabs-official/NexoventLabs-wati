@@ -38,14 +38,14 @@ export default function Sidebar({
   }
 
   return (
-    <aside className="w-[24rem] min-w-[20rem] max-w-[28rem] bg-wati-sidebar border-r border-gray-200 flex flex-col">
+    <aside className="w-[24rem] min-w-[20rem] max-w-[28rem] bg-wati-sidebar border-r border-wati-border flex flex-col">
       {/* Header */}
-      <div className="bg-wati-panel px-4 py-3 flex items-center justify-between">
+      <div className="bg-wati-sidebar px-4 py-3 flex items-center justify-between">
         <div className="flex items-center min-w-0">
           <img
             src="/banner1.png"
             alt="Nexovent Labs - Wati"
-            className="h-9 w-auto object-contain rounded"
+            className="h-14 w-auto object-contain rounded"
           />
         </div>
         <div className="flex items-center gap-1">
@@ -75,39 +75,39 @@ export default function Sidebar({
       </div>
 
       {showAdd && (
-        <form ref={addFormRef} onSubmit={handleAdd} className="p-3 border-b bg-white flex gap-2">
+        <form ref={addFormRef} onSubmit={handleAdd} className="p-3 border-b border-wati-border bg-wati-sidebar flex gap-2">
           <input
             autoFocus
             placeholder="+91xxxxxxxxxx"
             value={newNum}
             onChange={e => setNewNum(e.target.value)}
-            className="flex-1 px-3 py-2 rounded bg-gray-100 text-sm outline-none focus:ring-1 focus:ring-wati-primary"
+            className="flex-1 px-3 py-2 rounded bg-wati-panel text-wati-text border border-wati-border text-sm outline-none focus:ring-1 focus:ring-wati-primary"
           />
           <input
             placeholder="Name"
             value={newName}
             onChange={e => setNewName(e.target.value)}
-            className="flex-1 px-3 py-2 rounded bg-gray-100 text-sm outline-none focus:ring-1 focus:ring-wati-primary"
+            className="flex-1 px-3 py-2 rounded bg-wati-panel text-wati-text border border-wati-border text-sm outline-none focus:ring-1 focus:ring-wati-primary"
           />
           <button className="px-3 py-2 rounded bg-wati-primary text-white text-sm">Add</button>
         </form>
       )}
 
       {/* Search + filter */}
-      <div className="px-3 py-2 bg-white border-b flex items-center gap-2">
+      <div className="px-3 py-2 bg-wati-sidebar border-b border-wati-border flex items-center gap-2">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-2.5 text-wati-muted" size={16} />
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Search name or number"
-            className="w-full pl-9 pr-3 py-2 rounded bg-gray-100 text-sm outline-none focus:ring-1 focus:ring-wati-primary"
+            className="w-full pl-9 pr-3 py-2 rounded bg-wati-panel text-wati-text border border-wati-border text-sm outline-none focus:ring-1 focus:ring-wati-primary placeholder-wati-muted"
           />
         </div>
         <button
           ref={filterBtnRef}
           onClick={() => setShowFilter(v => !v)}
-          className={clsx('p-2 rounded-full', showFilter ? 'bg-wati-primary text-white' : 'hover:bg-gray-200 text-wati-muted')}
+          className={clsx('p-2 rounded-full', showFilter ? 'bg-wati-primary text-white' : 'hover:bg-wati-panel text-wati-muted')}
           title="Filter by date"
         >
           <Filter size={18} />
@@ -115,16 +115,16 @@ export default function Sidebar({
       </div>
 
       {showFilter && (
-        <div ref={filterFormRef} className="px-3 py-2 bg-white border-b flex items-center gap-2 text-xs">
+        <div ref={filterFormRef} className="px-3 py-2 bg-wati-sidebar border-b border-wati-border flex items-center gap-2 text-xs">
           <label className="flex-1">
             From
             <input type="date" value={range.from} onChange={e => setRange(r => ({ ...r, from: e.target.value }))}
-              className="w-full px-2 py-1 rounded bg-gray-100 mt-0.5" />
+              className="w-full px-2 py-1 rounded bg-wati-panel border border-wati-border text-wati-text mt-0.5 outline-none" />
           </label>
           <label className="flex-1">
             To
             <input type="date" value={range.to} onChange={e => setRange(r => ({ ...r, to: e.target.value }))}
-              className="w-full px-2 py-1 rounded bg-gray-100 mt-0.5" />
+              className="w-full px-2 py-1 rounded bg-wati-panel border border-wati-border text-wati-text mt-0.5 outline-none" />
           </label>
           {(range.from || range.to) && (
             <button onClick={() => setRange({ from: '', to: '' })} className="text-wati-muted mt-4"><X size={14} /></button>
@@ -136,14 +136,14 @@ export default function Sidebar({
       <div className="flex-1 overflow-y-auto thin-scroll">
         {loading ? (
           Array.from({ length: 10 }).map((_, i) => (
-            <div key={i} className="flex items-center gap-3 px-3 py-3 border-b border-[#f2f2f2]">
-              <div className="w-[48px] h-[48px] rounded-full bg-black/5 animate-pulse shrink-0" />
+            <div key={i} className="flex items-center gap-3 px-3 py-3 border-b border-wati-border">
+              <div className="w-[48px] h-[48px] rounded-full bg-white/5 animate-pulse shrink-0" />
               <div className="flex-1 flex flex-col gap-2.5 mt-0.5">
                 <div className="flex justify-between items-center">
-                  <div className="h-3.5 bg-black/5 rounded w-[60%] animate-pulse" />
-                  <div className="h-2.5 bg-black/5 rounded w-10 animate-pulse" />
+                  <div className="h-3.5 bg-white/5 rounded w-[60%] animate-pulse" />
+                  <div className="h-2.5 bg-white/5 rounded w-10 animate-pulse" />
                 </div>
-                <div className="h-2.5 bg-black/5 rounded w-[80%] animate-pulse" />
+                <div className="h-2.5 bg-white/5 rounded w-[80%] animate-pulse" />
               </div>
             </div>
           ))
@@ -156,8 +156,8 @@ export default function Sidebar({
             key={c._id}
             onClick={() => onSelect(c._id)}
             className={clsx(
-              'w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-[#f5f6f6] transition-colors',
-              selectedId === c._id ? 'bg-wati-panel hover:bg-wati-panel' : 'border-b border-[#f2f2f2]'
+              'w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-wati-panel transition-colors',
+              selectedId === c._id ? 'bg-wati-panel hover:bg-wati-panel' : 'border-b border-wati-border'
             )}
           >
             <Avatar name={c.name || c.profileName || c.waId} url={c.profilePicUrl} />
