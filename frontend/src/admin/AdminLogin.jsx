@@ -37,7 +37,7 @@ export default function AdminLogin({ onLoggedIn }) {
             <Lock size={28} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Welcome Back</h1>
-          <p className="text-[14px] text-slate-500 mt-1.5 font-medium">Vanigan Support panel</p>
+          <p className="text-[14px] text-slate-500 mt-1.5 font-medium">Nexovent Labs - Wati panel</p>
         </div>
 
         <form onSubmit={submit} className="space-y-4">

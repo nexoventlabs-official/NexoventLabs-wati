@@ -1,4 +1,4 @@
-# Render Blueprint for the Vanigan Support backend.
+# Render Blueprint for the Nexovent Labs - Wati backend.
 # Lives at the repo root so Render auto-detects it on "New Blueprint".
 services:
   - type: web

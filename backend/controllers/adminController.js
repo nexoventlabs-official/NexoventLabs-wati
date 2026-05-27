@@ -206,7 +206,7 @@ exports.downloadReport = async (req, res) => {
 // --- Excel writer -----------------------------------------------------------
 async function streamExcel(res, rows, range, filename) {
   const wb = new ExcelJS.Workbook();
-  wb.creator = 'Vanigan Support';
+  wb.creator = 'Nexovent Labs - Wati';
   wb.created = new Date();
 
   // "— None —" looks awkward in a spreadsheet; show "N/A" instead.
@@ -329,7 +329,7 @@ function streamPdf(res, rows, range, filename) {
   const LEFT = doc.page.margins.left;
 
   // --- Title block (first page only) ---
-  doc.fontSize(16).fillColor('#22A06B').text('Vanigan Support — Contact Report', LEFT, doc.page.margins.top);
+  doc.fontSize(16).fillColor('#22A06B').text('Nexovent Labs - Wati — Contact Report', LEFT, doc.page.margins.top);
   doc.fontSize(9).fillColor('#444');
   const rangeLabel = range.from || range.to
     ? `Range: ${range.from ? fmt(range.from) : '—'}  to  ${range.to ? fmt(range.to) : '—'}`
@@ -452,7 +452,7 @@ function streamPdf(res, rows, range, filename) {
   // Footer note on the last page
   doc.moveDown(0.3);
   doc.fontSize(7).fillColor('#888').text(
-    'Vanigan Support · audit log is append-only · cleared on Clear chat',
+    'Nexovent Labs - Wati · audit log is append-only · cleared on Clear chat',
     LEFT
   );
 

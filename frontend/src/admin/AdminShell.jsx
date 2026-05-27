@@ -9,10 +9,10 @@ export default function AdminShell({ active, onNavigate, onLogout, title, childr
       <aside className="w-64 shrink-0 bg-slate-900 text-slate-300 flex flex-col shadow-xl z-20">
         <div className="px-6 py-5 border-b border-white/5 flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-admin-accent to-admin-accentHover flex items-center justify-center font-bold text-white shadow-premium">
-            V
+            N
           </div>
           <div>
-            <div className="text-[14px] font-bold text-white tracking-wide">Vanigan</div>
+            <div className="text-[14px] font-bold text-white tracking-wide">Nexovent Labs - Wati</div>
             <div className="text-[12px] opacity-60 font-medium tracking-wider uppercase">Admin Panel</div>
           </div>
         </div>

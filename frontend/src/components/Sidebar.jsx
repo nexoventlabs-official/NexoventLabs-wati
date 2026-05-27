@@ -44,10 +44,10 @@ export default function Sidebar({
         <div className="flex items-center gap-2 min-w-0">
           <img
             src="/logo.png"
-            alt="Vanigan Support"
+            alt="Nexovent Labs - Wati"
             className="w-9 h-9 rounded-full object-cover ring-1 ring-black/5 shrink-0"
           />
-          <div className="font-semibold text-wati-text truncate">Vanigan Support</div>
+          <div className="font-semibold text-wati-text truncate">Nexovent Labs - Wati</div>
         </div>
         <div className="flex items-center gap-1">
           {onToggleNotifications && (
