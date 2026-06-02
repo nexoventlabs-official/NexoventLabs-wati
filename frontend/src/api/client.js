@@ -7,7 +7,7 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 // Attach the admin JWT to /admin/* and /categories/* requests when present in
 // localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
-  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images'))) {
+  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images') || config.url.startsWith('/welcome'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
       config.headers = config.headers || {};
@@ -91,6 +91,16 @@ export const FlowImages = {
   list: () => api.get('/flow-images').then((r) => r.data),
   set: (key, url, publicId) => api.put(`/flow-images/${key}`, { url, publicId }).then((r) => r.data),
   remove: (key) => api.delete(`/flow-images/${key}`).then((r) => r.data),
+};
+
+// --- Welcome API (admin-only) ----------------------------------------------
+// Editable welcome message (header image, body, footer, CTA) + flow banner.
+export const Welcome = {
+  get: () => api.get('/welcome').then((r) => r.data),
+  update: (body) => api.patch('/welcome', body).then((r) => r.data),
+  // slot = 'header' | 'banner'
+  setImage: (slot, url, publicId) => api.put(`/welcome/image/${slot}`, { url, publicId }).then((r) => r.data),
+  removeImage: (slot) => api.delete(`/welcome/image/${slot}`).then((r) => r.data),
 };
 
 export const Admin = {

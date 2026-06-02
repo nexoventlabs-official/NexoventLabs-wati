@@ -3,7 +3,8 @@ const { buildFlowJSON } = require('./flowJson');
 const Setting = require('../models/Setting');
 const Category = require('../models/Category');
 const flowImages = require('./flowImages');
-const { urlToBase64 } = require('./imageBase64');
+const { urlToBase64, toJpgUrl } = require('./imageBase64');
+const welcomeService = require('./welcomeService');
 
 const FLOW_ID_KEY = 'whatsapp_flow_id';
 const FLOW_STATUS_KEY = 'whatsapp_flow_status';
@@ -105,27 +106,32 @@ async function buildCategoryFlowData() {
 }
 
 // Send the category-picker flow to a contact, fronted by an IMAGE header +
-// promo body + "View Services" CTA. Returns the Meta response or null when no
-// flow / no categories are available (so the caller can fall back).
-async function sendCategoryFlow(waId, { body, footer } = {}) {
+// promo body + CTA. Body/footer/CTA come from the editable Welcome Details
+// settings (admin) unless overridden by the caller. Returns the Meta response
+// or null when no flow / no categories are available (so the caller can fall back).
+async function sendCategoryFlow(waId, { body, footer, cta } = {}) {
   const flowId = await getFlowId();
   if (!flowId) return null;
   const status = await getFlowStatus();
   const data = await buildCategoryFlowData();
   if (!data.categories.length) return null;
 
-  // Image header for the welcome flow message (uploaded via the Flow Images page).
-  const headerUrl = await flowImages.getUrl('welcome_header');
+  const welcome = await welcomeService.getWelcome();
+
+  // Image header for the welcome flow message (uploaded via the Flow Images /
+  // Welcome Details page). Force JPEG delivery so WebP uploads don't trigger
+  // Meta error 131053.
+  const headerUrl = welcome.headerImage;
   let header;
-  if (headerUrl) header = { type: 'image', link: headerUrl };
+  if (headerUrl) header = { type: 'image', link: toJpgUrl(headerUrl) };
   else header = { type: 'text', text: 'Nexovent Labs' };
 
   return meta.sendFlowMessage(waId, {
     flowId,
-    flowCta: 'View Services',
+    flowCta: (cta || welcome.cta || 'View Services').slice(0, 30),
     header,
-    body: body || 'Convert your business into WhatsApp 🚀\n\nGrow your business from today and start your *15 days FREE trial*. Tap *View Services* to explore and get a quick demo.',
-    footer: footer || 'Nexovent Labs · WhatsApp Automation',
+    body: body || welcome.body,
+    footer: footer || welcome.footer,
     flowToken: `nxv_${waId}_${Date.now()}`,
     flowActionPayload: { screen: 'CATEGORY_SELECT', data },
     mode: status === 'PUBLISHED' ? 'published' : 'draft',

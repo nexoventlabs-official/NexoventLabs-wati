@@ -39,4 +39,14 @@ function withCloudinaryTransform(url, opts = {}) {
   return url.replace('/upload/', `/upload/${parts.join(',')}/`);
 }
 
-module.exports = { urlToBase64, withCloudinaryTransform };
+// Return a Meta-safe JPEG delivery URL for any image. WhatsApp Cloud API only
+// accepts JPEG/PNG for image messages (NOT WebP/AVIF -> error 131053), so we
+// force Cloudinary to transcode to jpg on delivery. Non-Cloudinary URLs are
+// returned unchanged.
+function toJpgUrl(url) {
+  if (!url || !url.includes('/upload/')) return url;
+  if (/\/upload\/[^/]*f_/.test(url)) return url; // already has a format transform
+  return url.replace('/upload/', '/upload/f_jpg,q_80/');
+}
+
+module.exports = { urlToBase64, withCloudinaryTransform, toJpgUrl };

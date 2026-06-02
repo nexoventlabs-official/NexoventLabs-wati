@@ -2,8 +2,10 @@ const Category = require('../models/Category');
 const Message = require('../models/Message');
 const meta = require('./metaService');
 const flowService = require('./flowService');
+const welcomeService = require('./welcomeService');
 const { emit } = require('./socketService');
 const redis = require('./redisService');
+const { toJpgUrl } = require('./imageBase64');
 
 // Greetings that trigger the welcome / category menu.
 const GREETING_RE = /^\s*(hi+|h+e+l+o+|h+e+y+|hii+|hello+|menu|start|hai|namaste|namaskaram|services?|demo)\b/i;
@@ -58,6 +60,11 @@ async function recordOutbound(contact, { wamid, type, text, mediaUrl, mediaFilen
  */
 async function sendWelcomeMenu(contact) {
   const cats = await Category.find({ active: true }).sort({ sortOrder: 1, name: 1 }).lean();
+  const welcome = await welcomeService.getWelcome();
+  const bodyText = welcome.body;
+  const footerText = welcome.footer;
+  const headerImageUrl = welcome.headerImage ? toJpgUrl(welcome.headerImage) : '';
+
   if (!cats.length) {
     // No categories configured yet - send a friendly fallback so the customer
     // isn't left hanging.
@@ -69,29 +76,38 @@ async function sendWelcomeMenu(contact) {
     return false;
   }
 
-  const bodyText =
-    'Convert your business into WhatsApp 🚀\n\nGrow your business from today and start your *15 days FREE trial*. Tap *View Services* to explore and get a quick demo.';
-  const footerText = 'Nexovent Labs · WhatsApp Automation';
-
   // Preferred path: a published WhatsApp Flow (rich, scrollable category picker
-  // with logos) fronted by an image header + "View Services" CTA. Falls back to
-  // reply buttons / list if no flow is configured yet.
+  // with logos) fronted by an image header + CTA. Falls back to reply buttons /
+  // list if no flow is configured yet.
   try {
     const flowResp = await flowService.sendCategoryFlow(contact.waId, {
       body: bodyText,
       footer: footerText,
+      cta: welcome.cta,
     });
     if (flowResp) {
+      // Record with the header image + template-style card so the panel shows
+      // exactly what the customer received.
       await recordOutbound(contact, {
         wamid: flowResp?.messages?.[0]?.id,
-        type: 'interactive',
+        type: headerImageUrl ? 'image' : 'interactive',
+        mediaUrl: headerImageUrl || '',
         text: bodyText,
+        caption: headerImageUrl ? bodyText : '',
+        templateData: {
+          header: headerImageUrl ? { type: 'IMAGE', mediaUrl: headerImageUrl } : { type: 'NONE' },
+          body: bodyText,
+          footer: footerText,
+          buttons: [{ type: 'QUICK_REPLY', text: welcome.cta || 'View Services' }],
+        },
       });
       return true;
     }
   } catch (e) {
     console.warn('[botService] flow welcome failed, falling back to buttons:', e.response?.data?.error?.message || e.message);
   }
+
+  const header = headerImageUrl ? { type: 'image', link: headerImageUrl } : { type: 'text', text: 'Nexovent Labs' };
 
   if (cats.length <= 3) {
     // Reply-buttons menu (native WhatsApp buttons, max 3).
@@ -103,20 +119,22 @@ async function sendWelcomeMenu(contact) {
     };
     const r = await meta.sendInteractive(contact.waId, {
       kind: 'button',
-      header: { type: 'text', text: 'Nexovent Labs' },
+      header,
       body: bodyText,
       footer: footerText,
       action,
     });
     await recordOutbound(contact, {
       wamid: r?.messages?.[0]?.id,
-      type: 'interactive',
+      type: headerImageUrl ? 'image' : 'interactive',
+      mediaUrl: headerImageUrl || '',
       text: bodyText,
+      caption: headerImageUrl ? bodyText : '',
     });
     return true;
   }
 
-  // List menu (4-10 categories).
+  // List menu (4-10 categories). NOTE: list messages only allow a TEXT header.
   const rows = cats.map((c) => ({
     id: `${CATEGORY_ID_PREFIX}${c._id}`,
     title: c.name,
@@ -126,7 +144,7 @@ async function sendWelcomeMenu(contact) {
     header: { type: 'text', text: 'Nexovent Labs' },
     body: bodyText,
     footer: footerText,
-    buttonText: 'View services',
+    buttonText: welcome.cta || 'View services',
     rows,
   });
   await recordOutbound(contact, {
@@ -142,7 +160,10 @@ async function sendWelcomeMenu(contact) {
  * a "DEMO" CTA URL button. Falls back gracefully when no image / no URL is set.
  */
 async function sendCategoryPromo(contact, category) {
-  const headerImageUrl = category.headerImageUrl || category.logoUrl || '';
+  const rawImageUrl = category.headerImageUrl || category.logoUrl || '';
+  // WhatsApp Cloud API rejects WebP/AVIF for image messages (error 131053).
+  // Force JPEG delivery for any Cloudinary asset so it always sends.
+  const headerImageUrl = toJpgUrl(rawImageUrl);
   const bodyText = category.bodyContent || `Here's more about *${category.name}*.`;
   const footerText = 'Nexovent Labs';
   const ctaText = (category.ctaText || 'DEMO').slice(0, 20);
