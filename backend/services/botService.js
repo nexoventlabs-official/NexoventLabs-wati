@@ -70,14 +70,14 @@ async function sendWelcomeMenu(contact) {
   }
 
   const bodyText =
-    'Welcome to *Nexovent Labs* 🚀\n\nAutomate. Engage. Grow. Pick what you are interested in and we will share a quick demo.';
+    'Convert your business into WhatsApp 🚀\n\nGrow your business from today and start your *15 days FREE trial*. Tap *View Services* to explore and get a quick demo.';
   const footerText = 'Nexovent Labs · WhatsApp Automation';
 
-  // Preferred path: a published WhatsApp Flow (rich, scrollable category picker).
-  // Falls back to reply buttons / list if no flow is configured yet.
+  // Preferred path: a published WhatsApp Flow (rich, scrollable category picker
+  // with logos) fronted by an image header + "View Services" CTA. Falls back to
+  // reply buttons / list if no flow is configured yet.
   try {
     const flowResp = await flowService.sendCategoryFlow(contact.waId, {
-      header: { type: 'text', text: 'Nexovent Labs' },
       body: bodyText,
       footer: footerText,
     });

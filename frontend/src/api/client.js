@@ -7,7 +7,7 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 // Attach the admin JWT to /admin/* and /categories/* requests when present in
 // localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
-  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows'))) {
+  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
       config.headers = config.headers || {};
@@ -75,7 +75,6 @@ export const Categories = {
   create: (body) => api.post('/categories', body).then((r) => r.data),
   update: (id, body) => api.patch(`/categories/${id}`, body).then((r) => r.data),
   remove: (id) => api.delete(`/categories/${id}`).then((r) => r.data),
-  submit: (id) => api.post(`/categories/${id}/submit`).then((r) => r.data),
   sendTest: (id, waId) => api.post(`/categories/${id}/send-test`, { waId }).then((r) => r.data),
 };
 
@@ -84,6 +83,14 @@ export const Categories = {
 export const Flows = {
   status: () => api.get('/flows/status').then((r) => r.data),
   publish: () => api.post('/flows/publish').then((r) => r.data),
+};
+
+// --- Flow Images API (admin-only) ------------------------------------------
+// Welcome-flow header + banner image slots.
+export const FlowImages = {
+  list: () => api.get('/flow-images').then((r) => r.data),
+  set: (key, url, publicId) => api.put(`/flow-images/${key}`, { url, publicId }).then((r) => r.data),
+  remove: (key) => api.delete(`/flow-images/${key}`).then((r) => r.data),
 };
 
 export const Admin = {

@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogOut, LayoutDashboard, FileBarChart2, ArrowLeft, MessageSquare, LayoutGrid } from 'lucide-react';
+import { LogOut, LayoutDashboard, FileBarChart2, ArrowLeft, MessageSquare, LayoutGrid, Images } from 'lucide-react';
 
 // Shared chrome (sidebar + topbar) for the authenticated admin pages.
 // Every admin route renders inside this shell so logout / nav are consistent.
@@ -28,6 +28,12 @@ export default function AdminShell({ active, onNavigate, onLogout, title, childr
             label="Categories"
             active={active === 'categories'}
             onClick={() => onNavigate('/admin/categories')}
+          />
+          <NavItem
+            icon={Images}
+            label="Flow Images"
+            active={active === 'flow-images'}
+            onClick={() => onNavigate('/admin/flow-images')}
           />
           <NavItem
             icon={FileBarChart2}

@@ -16,6 +16,7 @@ const webhookRoutes = require('./routes/webhook');
 const adminRoutes = require('./routes/admin');
 const categoriesRoutes = require('./routes/categories');
 const flowsRoutes = require('./routes/flows');
+const flowImagesRoutes = require('./routes/flowImages');
 
 const app = express();
 const server = http.createServer(app);
@@ -41,6 +42,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/categories', categoriesRoutes);
 app.use('/api/flows', flowsRoutes);
+app.use('/api/flow-images', flowImagesRoutes);
 
 // 404 & error
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

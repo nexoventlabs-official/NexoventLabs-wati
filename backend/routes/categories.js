@@ -11,7 +11,6 @@ router.get('/:id', c.get);
 router.post('/', c.create);
 router.patch('/:id', c.update);
 router.delete('/:id', c.remove);
-router.post('/:id/submit', c.submitToMeta);
 router.post('/:id/send-test', c.sendTest);
 
 module.exports = router;

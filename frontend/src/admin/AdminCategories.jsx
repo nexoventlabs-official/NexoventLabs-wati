@@ -1,21 +1,11 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, Image as ImageIcon, UploadCloud, X, Send,
-  ExternalLink, CheckCircle2, Clock, XCircle, RefreshCw, Megaphone, Workflow,
+  ExternalLink, CheckCircle2, Clock, RefreshCw, Megaphone, Workflow,
 } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
 import { Categories, Uploads, Flows } from '../api/client';
 import { socket } from '../api/socket';
-
-const STATUS_BADGE = {
-  APPROVED: { icon: <CheckCircle2 size={13} />, cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  PENDING: { icon: <Clock size={13} />, cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-  REJECTED: { icon: <XCircle size={13} />, cls: 'bg-rose-100 text-rose-700 border-rose-200' },
-  DRAFT: { icon: <Clock size={13} />, cls: 'bg-slate-100 text-slate-600 border-slate-200' },
-  NONE: { icon: <Clock size={13} />, cls: 'bg-slate-100 text-slate-500 border-slate-200' },
-  PAUSED: { icon: <Clock size={13} />, cls: 'bg-orange-100 text-orange-700 border-orange-200' },
-  DISABLED: { icon: <XCircle size={13} />, cls: 'bg-rose-100 text-rose-700 border-rose-200' },
-};
 
 const blank = {
   name: '', description: '', logoUrl: '', headerImageUrl: '',
@@ -78,16 +68,6 @@ export default function AdminCategories({ onNavigate, onLogout }) {
       await Categories.remove(item._id);
       setItems((prev) => prev.filter((x) => x._id !== item._id));
       showToast('success', 'Category deleted.');
-    } catch (e) {
-      showToast('error', e?.response?.data?.error || e.message);
-    }
-  }
-
-  async function submitToMeta(item) {
-    try {
-      const updated = await Categories.submit(item._id);
-      setItems((prev) => prev.map((x) => (x._id === updated._id ? updated : x)));
-      showToast('success', 'Submitted to Meta. Approval usually takes a few minutes.');
     } catch (e) {
       showToast('error', e?.response?.data?.error || e.message);
     }
@@ -182,7 +162,6 @@ export default function AdminCategories({ onNavigate, onLogout }) {
           </div>
         ) : (
           items.map((c) => {
-            const badge = STATUS_BADGE[c.metaStatus] || STATUS_BADGE.NONE;
             return (
               <div key={c._id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
                 <div className="h-32 bg-slate-100 relative">
@@ -198,9 +177,6 @@ export default function AdminCategories({ onNavigate, onLogout }) {
                       Hidden
                     </span>
                   )}
-                  <span className={`absolute top-2 right-2 text-[11px] border rounded-full px-2 py-0.5 inline-flex items-center gap-1 font-semibold ${badge.cls}`}>
-                    {badge.icon} {c.metaStatus || 'NONE'}
-                  </span>
                 </div>
                 <div className="p-4 flex-1 flex flex-col">
                   <div className="flex items-center gap-2.5">
@@ -231,15 +207,6 @@ export default function AdminCategories({ onNavigate, onLogout }) {
                     >
                       <Pencil size={13} /> Edit
                     </button>
-                    {(c.metaStatus === 'NONE' || c.metaStatus === 'DRAFT' || c.metaStatus === 'REJECTED') && (
-                      <button
-                        onClick={() => submitToMeta(c)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-admin-accent hover:bg-admin-accent/10 rounded-lg transition-colors"
-                        title="Submit this promo to Meta for approval"
-                      >
-                        <Send size={13} /> Submit
-                      </button>
-                    )}
                     <button
                       onClick={() => del(c)}
                       className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[12px] font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors ml-auto"

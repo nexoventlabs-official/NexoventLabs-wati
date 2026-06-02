@@ -1,17 +1,16 @@
 /**
  * Self-contained WhatsApp Flow JSON for the Nexovent Labs category picker.
  *
- * This is a NAVIGATE-only flow (no data_exchange endpoint / encryption keys
- * required). The category list is injected at send-time through the flow
- * message's `flow_action_payload.data.categories`, so a single published flow
- * serves whatever categories are active without re-publishing.
+ * NAVIGATE-only flow (no data_exchange endpoint / encryption keys required).
+ * Runtime data (banner + categories, each with a base64 logo) is injected via
+ * the flow message's `flow_action_payload.data`, so one published flow serves
+ * whatever categories are active without re-publishing.
  *
- * Screen flow:
- *   CATEGORY_SELECT  --(navigate)-->  CONFIRM (terminal, success)
+ * IMPORTANT: the category `image` field and the banner MUST be raw base64
+ * (PNG/JPG) - WhatsApp Flows do NOT accept image URLs. That is why logos passed
+ * as URLs never showed up. See services/imageBase64.js.
  *
- * The terminal screen fires `complete` with { selected_category }, which the
- * webhook receives as an `interactive.nfm_reply` and uses to send the chosen
- * category's promo message (image header + body + DEMO CTA).
+ * Screen: CATEGORY_SELECT (terminal) -> fires `complete` with { selected_category }.
  */
 function buildFlowJSON() {
   return {
@@ -23,10 +22,9 @@ function buildFlowJSON() {
         terminal: true,
         success: true,
         data: {
-          heading: {
-            type: 'string',
-            __example__: 'What are you interested in?',
-          },
+          banner: { type: 'string', __example__: 'iVBORw0KGgo' },
+          has_banner: { type: 'boolean', __example__: false },
+          heading: { type: 'string', __example__: 'What are you interested in?' },
           subheading: {
             type: 'string',
             __example__: 'Pick a service and we will share a quick demo.',
@@ -39,6 +37,7 @@ function buildFlowJSON() {
                 id: { type: 'string' },
                 title: { type: 'string' },
                 description: { type: 'string' },
+                image: { type: 'string' },
               },
             },
             __example__: [
@@ -50,6 +49,15 @@ function buildFlowJSON() {
         layout: {
           type: 'SingleColumnLayout',
           children: [
+            {
+              type: 'Image',
+              src: '${data.banner}',
+              width: 1000,
+              height: 200,
+              'scale-type': 'cover',
+              'alt-text': 'Nexovent Labs',
+              visible: '${data.has_banner}',
+            },
             { type: 'TextHeading', text: '${data.heading}' },
             { type: 'TextBody', text: '${data.subheading}' },
             {

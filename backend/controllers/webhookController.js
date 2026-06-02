@@ -347,20 +347,5 @@ async function handleTemplateStatus(value) {
     doc.lastSyncedAt = new Date();
     await doc.save();
     emit('template:update', doc);
-
-    // If this template backs a promo category, mirror the status onto it so
-    // the admin Categories page reflects approval/rejection without a sync.
-    try {
-      const Category = require('../models/Category');
-      const cat = await Category.findOne({ templateId: doc._id });
-      if (cat) {
-        cat.metaStatus = doc.status;
-        cat.metaRejectedReason = doc.rejectedReason || '';
-        await cat.save();
-        emit('category:update', cat);
-      }
-    } catch (e) {
-      console.error('[handleTemplateStatus->category]', e.message);
-    }
   }
 }

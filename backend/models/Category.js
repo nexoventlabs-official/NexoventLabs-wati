@@ -4,12 +4,11 @@ const mongoose = require('mongoose');
  * A promotable "category" the business offers (e.g. WhatsApp Automation,
  * Chatbot, CRM). Each category powers TWO things:
  *
- *   1. A button/row inside the auto "welcome" message a customer receives when
+ *   1. A row inside the WhatsApp welcome flow / menu a customer receives when
  *      they say "hi". Tapping it triggers the category's promo message.
  *   2. A promo WhatsApp message = IMAGE header + body promotion + a single
- *      "DEMO" CTA URL button. The same structure is also submitted to Meta as
- *      a reusable message template so the admin can broadcast it proactively
- *      (outside the 24h service window) once Meta approves it.
+ *      "DEMO" CTA URL button, sent entirely via code (no Meta template
+ *      verification needed).
  */
 const CategorySchema = new mongoose.Schema(
   {
@@ -31,18 +30,6 @@ const CategorySchema = new mongoose.Schema(
 
     active: { type: Boolean, default: true },
     sortOrder: { type: Number, default: 0 },
-
-    // --- Meta template linkage --------------------------------------------
-    // We mirror the category into a Template doc so it can be submitted to Meta
-    // for approval and later broadcast via the existing Templates drawer.
-    templateId: { type: mongoose.Schema.Types.ObjectId, ref: 'Template', default: null },
-    templateName: { type: String, default: '' },
-    metaStatus: {
-      type: String,
-      enum: ['NONE', 'DRAFT', 'PENDING', 'APPROVED', 'REJECTED', 'PAUSED', 'DISABLED', 'IN_APPEAL'],
-      default: 'NONE',
-    },
-    metaRejectedReason: { type: String, default: '' },
   },
   { timestamps: true }
 );
