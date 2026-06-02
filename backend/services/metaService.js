@@ -222,6 +222,108 @@ async function deleteTemplate(name) {
   return data;
 }
 
+// --- WhatsApp Flows -----------------------------------------------------------
+// A Flow is a reusable, multi-screen form hosted by Meta. We use a SELF-CONTAINED
+// flow (navigate-only, no data_exchange endpoint) so no encryption keys / public
+// webhook are required. Category data is injected at send-time via
+// flow_action_payload.
+
+// Create an empty flow shell on the WABA. Returns { id }.
+async function createFlow(name, categories = ['OTHER']) {
+  const { data } = await axios.post(
+    `${GRAPH()}/${WABA_ID()}/flows`,
+    { name, categories },
+    { headers: authHeaders() }
+  );
+  return data; // { id }
+}
+
+// Upload / replace the flow's JSON asset. flowJsonObj is a plain object.
+async function updateFlowJSON(flowId, flowJsonObj) {
+  const form = new FormData();
+  form.append('file', Buffer.from(JSON.stringify(flowJsonObj)), {
+    filename: 'flow.json',
+    contentType: 'application/json',
+  });
+  form.append('name', 'flow.json');
+  form.append('asset_type', 'FLOW_JSON');
+  const { data } = await axios.post(`${GRAPH()}/${flowId}/assets`, form, {
+    headers: { ...authHeaders(), ...form.getHeaders() },
+    maxBodyLength: Infinity,
+    maxContentLength: Infinity,
+  });
+  return data; // { success, validation_errors? }
+}
+
+async function publishFlow(flowId) {
+  const { data } = await axios.post(`${GRAPH()}/${flowId}/publish`, {}, { headers: authHeaders() });
+  return data;
+}
+
+async function deprecateFlow(flowId) {
+  const { data } = await axios.post(`${GRAPH()}/${flowId}/deprecate`, {}, { headers: authHeaders() });
+  return data;
+}
+
+async function getFlow(flowId) {
+  const { data } = await axios.get(`${GRAPH()}/${flowId}`, {
+    headers: authHeaders(),
+    params: { fields: 'id,name,status,categories,validation_errors' },
+  });
+  return data;
+}
+
+async function listFlows() {
+  const { data } = await axios.get(`${GRAPH()}/${WABA_ID()}/flows`, {
+    headers: authHeaders(),
+    params: { limit: 200 },
+  });
+  return data;
+}
+
+// Send an interactive Flow message. The customer taps `flowCta` to open the flow.
+// For a self-contained flow we pass the runtime screen data via flowActionPayload
+// (= { screen, data }). `mode` is 'published' or 'draft'.
+async function sendFlowMessage(to, {
+  flowId, flowCta, header, body, footer,
+  flowToken, flowActionPayload, mode = 'published', context,
+}) {
+  const interactive = {
+    type: 'flow',
+    body: { text: body || ' ' },
+    action: {
+      name: 'flow',
+      parameters: {
+        flow_message_version: '3',
+        flow_token: flowToken || `flow_${to}`,
+        flow_id: String(flowId),
+        flow_cta: (flowCta || 'Open').slice(0, 30),
+        mode,
+        flow_action: 'navigate',
+        ...(flowActionPayload ? { flow_action_payload: flowActionPayload } : {}),
+      },
+    },
+  };
+  if (header) {
+    if (header.type === 'text') interactive.header = { type: 'text', text: header.text || '' };
+    else if (['image', 'video', 'document'].includes(header.type) && header.link) {
+      interactive.header = { type: header.type, [header.type]: { link: header.link } };
+    }
+  }
+  if (footer) interactive.footer = { text: footer };
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type: 'interactive',
+    interactive,
+  };
+  if (context) payload.context = { message_id: context };
+  const { data } = await axios.post(`${GRAPH()}/${PHONE_ID()}/messages`, payload, { headers: authHeaders() });
+  return data;
+}
+
 // --- Resumable media upload (for template header samples) ---
 // Required by Meta when creating a template with IMAGE/VIDEO/DOCUMENT header.
 // Flow:
@@ -304,6 +406,13 @@ module.exports = {
   getTemplateById,
   createTemplate,
   deleteTemplate,
+  createFlow,
+  updateFlowJSON,
+  publishFlow,
+  deprecateFlow,
+  getFlow,
+  listFlows,
+  sendFlowMessage,
   uploadHeaderSample,
   uploadMediaToMeta,
   fetchUrlToBuffer,

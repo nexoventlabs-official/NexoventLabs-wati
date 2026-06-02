@@ -251,12 +251,20 @@ async function handleMessagesEvent(value) {
           saved = await Message.create({ ...base, type: 'interactive', text: txt });
           contact.lastMessagePreview = txt;
 
-          // Category selection: the welcome menu's buttons/rows carry ids like
-          // "cat_<categoryId>". When the customer taps one, mark the chosen
-          // category on the contact and send that category's promo (image
-          // header + body + DEMO CTA).
-          const replyId =
+          // Category selection can arrive two ways:
+          //   1. button_reply / list_reply id = "cat_<id>"  (plain menu)
+          //   2. nfm_reply from the WhatsApp Flow, whose response_json carries
+          //      { selected_category: "cat_<id>" }            (flow picker)
+          let replyId =
             m.interactive?.button_reply?.id || m.interactive?.list_reply?.id || '';
+          if (!replyId && m.interactive?.type === 'nfm_reply') {
+            try {
+              const parsed = JSON.parse(m.interactive.nfm_reply?.response_json || '{}');
+              replyId = parsed.selected_category || '';
+            } catch (e) {
+              console.warn('[flow nfm_reply parse]', e.message);
+            }
+          }
           if (String(replyId).startsWith(bot.CATEGORY_ID_PREFIX)) {
             const contactId = contact._id;
             (async () => {

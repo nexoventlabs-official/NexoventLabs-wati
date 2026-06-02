@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Pencil, Trash2, Image as ImageIcon, UploadCloud, X, Send,
-  ExternalLink, CheckCircle2, Clock, XCircle, RefreshCw, Megaphone,
+  ExternalLink, CheckCircle2, Clock, XCircle, RefreshCw, Megaphone, Workflow,
 } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
-import { Categories, Uploads } from '../api/client';
+import { Categories, Uploads, Flows } from '../api/client';
 import { socket } from '../api/socket';
 
 const STATUS_BADGE = {
@@ -28,6 +28,8 @@ export default function AdminCategories({ onNavigate, onLogout }) {
   const [editing, setEditing] = useState(null); // 'new' | category object | null
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const [flow, setFlow] = useState(null);
+  const [publishingFlow, setPublishingFlow] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -41,7 +43,15 @@ export default function AdminCategories({ onNavigate, onLogout }) {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  const loadFlow = useCallback(async () => {
+    try {
+      setFlow(await Flows.status());
+    } catch {
+      setFlow(null);
+    }
+  }, []);
+
+  useEffect(() => { load(); loadFlow(); }, [load, loadFlow]);
 
   useEffect(() => {
     const onUpd = (c) => setItems((prev) => {
@@ -83,6 +93,19 @@ export default function AdminCategories({ onNavigate, onLogout }) {
     }
   }
 
+  async function publishFlow() {
+    setPublishingFlow(true);
+    try {
+      const r = await Flows.publish();
+      await loadFlow();
+      showToast('success', `Flow published to Meta (id ${r.flowId}, ${r.status}).`);
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setPublishingFlow(false);
+    }
+  }
+
   return (
     <AdminShell active="categories" onNavigate={onNavigate} onLogout={onLogout} title="Categories">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6 animate-fade-in-up">
@@ -108,6 +131,41 @@ export default function AdminCategories({ onNavigate, onLogout }) {
           {error}
         </div>
       )}
+
+      {/* WhatsApp Flow status / publish control */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-6 flex flex-wrap items-center gap-4 animate-fade-in-up">
+        <div className="w-11 h-11 rounded-xl bg-admin-accent/10 text-admin-accent flex items-center justify-center shrink-0">
+          <Workflow size={22} />
+        </div>
+        <div className="flex-1 min-w-[240px]">
+          <div className="font-semibold text-slate-800 flex items-center gap-2">
+            WhatsApp Flow picker
+            {flow?.flowId ? (
+              <span className={`text-[11px] border rounded-full px-2 py-0.5 inline-flex items-center gap-1 font-semibold ${flow.status === 'PUBLISHED' ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                {flow.status === 'PUBLISHED' ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                {flow.status}
+              </span>
+            ) : (
+              <span className="text-[11px] border rounded-full px-2 py-0.5 bg-slate-100 text-slate-500 border-slate-200 font-semibold">
+                NOT CREATED
+              </span>
+            )}
+          </div>
+          <div className="text-[13px] text-slate-500 mt-0.5">
+            {flow?.flowId
+              ? <>Flow ID <span className="font-mono text-slate-600">{flow.flowId}</span> · serves {flow.categoryCount} active categor{flow.categoryCount === 1 ? 'y' : 'ies'}.</>
+              : 'Publish a Meta Flow so the welcome menu opens a rich category picker. Falls back to buttons until then.'}
+          </div>
+        </div>
+        <button
+          onClick={publishFlow}
+          disabled={publishingFlow}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-admin-accent text-admin-accent font-semibold text-sm hover:bg-admin-accent/5 transition-all disabled:opacity-60"
+        >
+          <RefreshCw size={16} className={publishingFlow ? 'animate-spin' : ''} />
+          {flow?.flowId ? 'Update & republish flow' : 'Create & publish flow'}
+        </button>
+      </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 animate-fade-in-up stagger-2">
         {loading && items.length === 0 ? (

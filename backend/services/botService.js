@@ -1,6 +1,7 @@
 const Category = require('../models/Category');
 const Message = require('../models/Message');
 const meta = require('./metaService');
+const flowService = require('./flowService');
 const { emit } = require('./socketService');
 const redis = require('./redisService');
 
@@ -71,6 +72,26 @@ async function sendWelcomeMenu(contact) {
   const bodyText =
     'Welcome to *Nexovent Labs* 🚀\n\nAutomate. Engage. Grow. Pick what you are interested in and we will share a quick demo.';
   const footerText = 'Nexovent Labs · WhatsApp Automation';
+
+  // Preferred path: a published WhatsApp Flow (rich, scrollable category picker).
+  // Falls back to reply buttons / list if no flow is configured yet.
+  try {
+    const flowResp = await flowService.sendCategoryFlow(contact.waId, {
+      header: { type: 'text', text: 'Nexovent Labs' },
+      body: bodyText,
+      footer: footerText,
+    });
+    if (flowResp) {
+      await recordOutbound(contact, {
+        wamid: flowResp?.messages?.[0]?.id,
+        type: 'interactive',
+        text: bodyText,
+      });
+      return true;
+    }
+  } catch (e) {
+    console.warn('[botService] flow welcome failed, falling back to buttons:', e.response?.data?.error?.message || e.message);
+  }
 
   if (cats.length <= 3) {
     // Reply-buttons menu (native WhatsApp buttons, max 3).

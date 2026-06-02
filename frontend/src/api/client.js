@@ -7,7 +7,7 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 // Attach the admin JWT to /admin/* and /categories/* requests when present in
 // localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
-  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories'))) {
+  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
       config.headers = config.headers || {};
@@ -77,6 +77,13 @@ export const Categories = {
   remove: (id) => api.delete(`/categories/${id}`).then((r) => r.data),
   submit: (id) => api.post(`/categories/${id}/submit`).then((r) => r.data),
   sendTest: (id, waId) => api.post(`/categories/${id}/send-test`, { waId }).then((r) => r.data),
+};
+
+// --- WhatsApp Flow API (admin-only) ----------------------------------------
+// Create / update / publish the category-picker flow on Meta.
+export const Flows = {
+  status: () => api.get('/flows/status').then((r) => r.data),
+  publish: () => api.post('/flows/publish').then((r) => r.data),
 };
 
 export const Admin = {
