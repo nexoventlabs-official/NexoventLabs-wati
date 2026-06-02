@@ -1,8 +1,8 @@
 const Contact = require('../models/Contact');
 const followUp = require('./followUpService');
 
-// Poll interval for due follow-ups. 30s is plenty for a 5-minute delay.
-const TICK_MS = 30 * 1000;
+// Poll interval for due follow-ups. Kept short so near-instant delays fire promptly.
+const TICK_MS = 2 * 1000;
 
 let timer = null;
 let running = false;

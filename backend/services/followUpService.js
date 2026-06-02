@@ -8,9 +8,9 @@ const { toJpgUrl } = require('./imageBase64');
 
 // ---- Config ---------------------------------------------------------------
 // Delay after a service pick before we send the Interested / Not Interested
-// prompt. Editable via Setting key (minutes) but defaults to 5 minutes.
+// prompt. Editable via Setting key (minutes) but defaults to ~1 second now.
 const DELAY_KEY = 'followup_delay_minutes';
-const DEFAULT_DELAY_MIN = 5;
+const DEFAULT_DELAY_MIN = 1 / 60; // ≈ 1 second
 
 // Editable copy + the call number used in the Interested / Not Interested replies.
 const KEYS = {
