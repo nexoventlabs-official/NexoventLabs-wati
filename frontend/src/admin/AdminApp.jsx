@@ -4,6 +4,7 @@ import AdminLogin from './AdminLogin.jsx';
 import AdminDashboard from './AdminDashboard.jsx';
 import AdminContactDetail from './AdminContactDetail.jsx';
 import AdminReports from './AdminReports.jsx';
+import AdminCategories from './AdminCategories.jsx';
 
 const TOKEN_KEY = 'vanigan:adminToken';
 
@@ -82,6 +83,9 @@ export default function AdminApp() {
   }
   if (path.startsWith('/admin/reports')) {
     return <AdminReports onNavigate={navigate} onLogout={handleLogout} />;
+  }
+  if (path.startsWith('/admin/categories')) {
+    return <AdminCategories onNavigate={navigate} onLogout={handleLogout} />;
   }
   // Default authed route
   return <AdminDashboard onNavigate={navigate} onLogout={handleLogout} />;
