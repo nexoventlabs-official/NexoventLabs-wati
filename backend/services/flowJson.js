@@ -24,11 +24,6 @@ function buildFlowJSON() {
         data: {
           banner: { type: 'string', __example__: 'iVBORw0KGgo' },
           has_banner: { type: 'boolean', __example__: false },
-          heading: { type: 'string', __example__: 'What are you interested in?' },
-          subheading: {
-            type: 'string',
-            __example__: 'Pick a service and we will share a quick demo.',
-          },
           categories: {
             type: 'array',
             items: {
@@ -58,8 +53,6 @@ function buildFlowJSON() {
               'alt-text': 'Nexovent Labs',
               visible: '${data.has_banner}',
             },
-            { type: 'TextHeading', text: '${data.heading}' },
-            { type: 'TextBody', text: '${data.subheading}' },
             {
               type: 'RadioButtonsGroup',
               name: 'selected_category',

@@ -103,8 +103,6 @@ async function buildCategoryFlowData() {
   return {
     has_banner: !!bannerB64,
     banner: bannerB64,
-    heading: 'What are you interested in?',
-    subheading: 'Pick a service and we will share a quick demo.',
     categories,
   };
 }
