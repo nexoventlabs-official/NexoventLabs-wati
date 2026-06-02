@@ -78,6 +78,22 @@ exports.remove = async (req, res) => {
   }
 };
 
+// Bulk delete. Body: { ids: [...] }  (empty/omitted = delete all).
+exports.removeMany = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+    const filter = ids && ids.length ? { _id: { $in: ids } } : {};
+    const docs = await CampaignContact.find(filter).select('_id').lean();
+    const delIds = docs.map((d) => String(d._id));
+    if (!delIds.length) return res.json({ ok: true, deleted: 0 });
+    await CampaignContact.deleteMany({ _id: { $in: delIds } });
+    for (const id of delIds) emit('campaign:delete', { id });
+    res.json({ ok: true, deleted: delIds.length });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
 // Send the welcome template to selected campaign contacts.
 // Body: { ids: [campaignContactId, ...] }  (omit/empty = all)
 exports.send = async (req, res) => {

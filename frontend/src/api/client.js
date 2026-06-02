@@ -115,6 +115,7 @@ export const Campaigns = {
   list: () => api.get('/campaigns').then((r) => r.data),
   add: (body) => api.post('/campaigns', body).then((r) => r.data),
   remove: (id) => api.delete(`/campaigns/${id}`).then((r) => r.data),
+  removeMany: (ids) => api.post('/campaigns/delete-many', { ids }).then((r) => r.data),
   send: (ids) => api.post('/campaigns/send', { ids }).then((r) => r.data),
 };
 

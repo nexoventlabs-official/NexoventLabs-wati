@@ -116,8 +116,25 @@ async function handleMessagesEvent(value) {
           profileName: profile.name || '',
           name: profile.name || '',
         });
-      } else if (profile.name && !contact.profileName) {
+      } else if (profile.name && contact.profileName !== profile.name) {
+        // Keep the WhatsApp profile name fresh (it can change over time).
         contact.profileName = profile.name;
+      }
+
+      // Mirror the captured WhatsApp name onto the campaign contact (if this
+      // number came from a campaign) so the Campaign list shows the real name.
+      if (profile.name) {
+        (async () => {
+          try {
+            const CampaignContact = require('../models/CampaignContact');
+            const cc = await CampaignContact.findOne({ waId: from });
+            if (cc && cc.name !== profile.name) {
+              cc.name = profile.name;
+              await cc.save();
+              emit('campaign:update', cc);
+            }
+          } catch (e) { /* non-fatal */ }
+        })();
       }
 
       // Use Meta's timestamp (Unix seconds) so panel order matches WhatsApp exactly,

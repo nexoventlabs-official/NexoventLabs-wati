@@ -28,6 +28,7 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
   const [selected, setSelected] = useState(() => new Set());
   const [adding, setAdding] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -100,6 +101,23 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
     }
   }
 
+  async function deleteSelected() {
+    const ids = [...selected];
+    if (!ids.length) { showToast('error', 'Select at least one contact.'); return; }
+    if (!confirm(`Delete ${ids.length} selected contact(s) from the campaign list?`)) return;
+    setDeleting(true);
+    try {
+      const r = await Campaigns.removeMany(ids);
+      setItems((prev) => prev.filter((x) => !selected.has(x._id)));
+      setSelected(new Set());
+      showToast('success', `Deleted ${r.deleted} contact(s).`);
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   const allChecked = items.length > 0 && selected.size === items.length;
 
   return (
@@ -145,6 +163,13 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50"
             >
               <Send size={15} /> {sending ? 'Sending…' : `Send to selected (${selected.size})`}
+            </button>
+            <button
+              onClick={deleteSelected}
+              disabled={deleting || selected.size === 0}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-rose-200 text-rose-600 text-sm font-semibold hover:bg-rose-50 disabled:opacity-50"
+            >
+              <Trash2 size={15} /> {deleting ? 'Deleting…' : `Delete selected (${selected.size})`}
             </button>
           </div>
         </div>
