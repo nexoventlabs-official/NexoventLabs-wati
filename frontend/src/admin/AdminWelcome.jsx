@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Image as ImageIcon, UploadCloud, Trash2, X, Save, MessageSquareText } from 'lucide-react';
+import { Image as ImageIcon, UploadCloud, Trash2, X, Save, MessageSquareText, Send, RefreshCw, CheckCircle2, Clock, XCircle, BadgeCheck } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
 import { Welcome, Uploads } from '../api/client';
 
@@ -11,6 +11,8 @@ export default function AdminWelcome({ onNavigate, onLogout }) {
   const [busySlot, setBusySlot] = useState('');
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const [tplBusy, setTplBusy] = useState('');
+  const [sendTo, setSendTo] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,6 +74,46 @@ export default function AdminWelcome({ onNavigate, onLogout }) {
       showToast('error', e?.response?.data?.error || e.message);
     } finally {
       setBusySlot('');
+    }
+  }
+
+  async function submitTemplate() {
+    setTplBusy('submit');
+    try {
+      const r = await Welcome.submitTemplate();
+      setData((d) => ({ ...d, template: r.template }));
+      showToast('success', 'Welcome template submitted to Meta. Approval usually takes a few minutes.');
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setTplBusy('');
+    }
+  }
+
+  async function refreshTemplate() {
+    setTplBusy('refresh');
+    try {
+      const r = await Welcome.refreshTemplate();
+      setData((d) => ({ ...d, template: r.template }));
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setTplBusy('');
+    }
+  }
+
+  async function sendTemplate() {
+    const waId = sendTo.replace(/\D/g, '');
+    if (!waId) { showToast('error', 'Enter a WhatsApp number (with country code).'); return; }
+    setTplBusy('send');
+    try {
+      await Welcome.sendTemplate(waId);
+      showToast('success', `Welcome message sent to +${waId}.`);
+      setSendTo('');
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setTplBusy('');
     }
   }
 
@@ -202,6 +244,74 @@ export default function AdminWelcome({ onNavigate, onLogout }) {
         </div>
       )}
 
+      {/* Meta template: send the welcome message to brand-new users */}
+      {!loading && data && (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mt-6 animate-fade-in-up">
+          <div className="flex items-start gap-3 flex-wrap">
+            <div className="w-11 h-11 rounded-xl bg-admin-accent/10 text-admin-accent flex items-center justify-center shrink-0">
+              <BadgeCheck size={22} />
+            </div>
+            <div className="flex-1 min-w-[240px]">
+              <div className="font-semibold text-slate-800 flex items-center gap-2">
+                Meta welcome template
+                <TemplateBadge status={data.template?.status} />
+              </div>
+              <p className="text-[13px] text-slate-500 mt-1 max-w-2xl">
+                Submit this welcome message (image header + body + "View Services" flow button) to Meta as a
+                reusable template. Once approved, you can send it to brand-new numbers any time - even outside the
+                24-hour window. The service list stays dynamic; it's injected into the flow at send time, so you
+                never need to re-submit when categories change.
+              </p>
+              {data.template?.name && (
+                <div className="text-[12px] text-slate-400 font-mono mt-1.5">
+                  {data.template.name} · {data.template.language}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-slate-100">
+            <button
+              onClick={submitTemplate}
+              disabled={tplBusy === 'submit'}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-admin-accent to-admin-accentHover text-white text-sm font-semibold shadow-md disabled:opacity-60"
+            >
+              <Send size={15} />
+              {tplBusy === 'submit' ? 'Submitting…' : (data.template?.status === 'NONE' ? 'Submit to Meta' : 'Re-submit to Meta')}
+            </button>
+            <button
+              onClick={refreshTemplate}
+              disabled={tplBusy === 'refresh' || data.template?.status === 'NONE'}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+            >
+              <RefreshCw size={15} className={tplBusy === 'refresh' ? 'animate-spin' : ''} /> Refresh status
+            </button>
+
+            <div className="flex items-center gap-2 ml-auto">
+              <input
+                className="adm-input w-48"
+                value={sendTo}
+                onChange={(e) => setSendTo(e.target.value)}
+                placeholder="919999999999"
+              />
+              <button
+                onClick={sendTemplate}
+                disabled={tplBusy === 'send' || data.template?.status !== 'APPROVED'}
+                title={data.template?.status !== 'APPROVED' ? 'Template must be APPROVED first' : 'Send welcome to this number'}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50"
+              >
+                <Send size={15} /> {tplBusy === 'send' ? 'Sending…' : 'Send welcome'}
+              </button>
+            </div>
+          </div>
+          {data.template?.status !== 'APPROVED' && data.template?.status !== 'NONE' && (
+            <p className="text-[12px] text-amber-600 font-medium mt-3">
+              Sending is enabled once Meta approves the template (status APPROVED).
+            </p>
+          )}
+        </div>
+      )}
+
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm flex items-start gap-2 max-w-sm ${toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
           <span className="flex-1 whitespace-pre-line">{toast.msg}</span>
@@ -214,6 +324,21 @@ export default function AdminWelcome({ onNavigate, onLogout }) {
 
 function SlotLabel({ children }) {
   return <div className="text-[12px] uppercase tracking-wider font-semibold text-slate-500 mb-2">{children}</div>;
+}
+
+function TemplateBadge({ status }) {
+  const map = {
+    APPROVED: { icon: <CheckCircle2 size={12} />, cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+    PENDING: { icon: <Clock size={12} />, cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+    REJECTED: { icon: <XCircle size={12} />, cls: 'bg-rose-100 text-rose-700 border-rose-200' },
+    NONE: { icon: <Clock size={12} />, cls: 'bg-slate-100 text-slate-500 border-slate-200' },
+  };
+  const b = map[status] || map.NONE;
+  return (
+    <span className={`text-[11px] border rounded-full px-2 py-0.5 inline-flex items-center gap-1 font-semibold ${b.cls}`}>
+      {b.icon} {status || 'NONE'}
+    </span>
+  );
 }
 
 function ImageSlot({ url, busy, onPick, onRemove, aspect = 'h-40' }) {

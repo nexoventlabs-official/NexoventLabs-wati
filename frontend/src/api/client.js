@@ -101,6 +101,10 @@ export const Welcome = {
   // slot = 'header' | 'banner'
   setImage: (slot, url, publicId) => api.put(`/welcome/image/${slot}`, { url, publicId }).then((r) => r.data),
   removeImage: (slot) => api.delete(`/welcome/image/${slot}`).then((r) => r.data),
+  // Meta template (send welcome to brand-new users outside the 24h window).
+  submitTemplate: () => api.post('/welcome/template/submit').then((r) => r.data),
+  refreshTemplate: () => api.post('/welcome/template/refresh').then((r) => r.data),
+  sendTemplate: (waId) => api.post('/welcome/template/send', { waId }).then((r) => r.data),
 };
 
 export const Admin = {

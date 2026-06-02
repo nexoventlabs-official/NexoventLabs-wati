@@ -1,14 +1,65 @@
 const welcomeService = require('../services/welcomeService');
+const welcomeTemplate = require('../services/welcomeTemplateService');
 const flowImages = require('../services/flowImages');
+const Contact = require('../models/Contact');
 const { deleteByUrl } = require('../config/cloudinary');
 
-// GET /api/welcome -> editable welcome copy + current header/banner images.
+// GET /api/welcome -> editable welcome copy + current header/banner images + template status.
 exports.get = async (_req, res) => {
   try {
     const data = await welcomeService.getWelcome();
-    res.json(data);
+    const template = await welcomeTemplate.getStatus();
+    res.json({ ...data, template });
   } catch (e) {
     res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// POST /api/welcome/template/submit -> create / submit the welcome template to Meta.
+exports.submitTemplate = async (req, res) => {
+  try {
+    const template = await welcomeTemplate.submit();
+    res.json({ ok: true, template });
+  } catch (e) {
+    const metaErr = e.response?.data?.error;
+    const friendly = metaErr?.error_user_msg || metaErr?.message || e.message || 'Submit failed';
+    console.error('[welcome.submitTemplate]', metaErr || e.message);
+    res.status(500).json({ error: friendly, details: e.response?.data || e.message });
+  }
+};
+
+// POST /api/welcome/template/refresh -> refresh approval status from Meta.
+exports.refreshTemplate = async (_req, res) => {
+  try {
+    const template = await welcomeTemplate.refresh();
+    res.json({ ok: true, template });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// POST /api/welcome/template/send  body: { waId }
+// Sends the approved welcome template to a (possibly brand-new) number.
+exports.sendTemplate = async (req, res) => {
+  try {
+    const waId = String(req.body?.waId || '').replace(/\D/g, '');
+    if (!waId) return res.status(400).json({ error: 'waId required' });
+
+    const { status } = await welcomeTemplate.getStatus();
+    if (status !== 'APPROVED') {
+      return res.status(400).json({ error: `Template is ${status}. Submit it and wait for Meta approval before sending.` });
+    }
+
+    const resp = await welcomeTemplate.sendToContact(waId);
+    // Ensure a contact exists so the conversation shows in the panel.
+    let contact = await Contact.findOne({ waId });
+    if (!contact) contact = await Contact.create({ waId, name: '' });
+    res.json({ ok: true, wamid: resp?.messages?.[0]?.id || null });
+  } catch (e) {
+    const metaErr = e.response?.data?.error;
+    const friendly = metaErr?.error_user_msg || metaErr?.message || e.message || 'Send failed';
+    console.error('[welcome.sendTemplate]', metaErr || e.message);
+    res.status(500).json({ error: friendly, details: e.response?.data || e.message });
   }
 };
 

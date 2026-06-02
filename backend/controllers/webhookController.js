@@ -348,4 +348,16 @@ async function handleTemplateStatus(value) {
     await doc.save();
     emit('template:update', doc);
   }
+
+  // Keep the welcome template's status (stored in Settings) in sync too.
+  try {
+    const Setting = require('../models/Setting');
+    const welcomeName = await Setting.get('welcome_template_name', 'nexovent_welcome');
+    if (value.message_template_name === welcomeName) {
+      await Setting.put('welcome_template_status', (value.event || value.status || 'PENDING').toUpperCase());
+      if (value.message_template_id) await Setting.put('welcome_template_meta_id', value.message_template_id);
+    }
+  } catch (e) {
+    console.error('[handleTemplateStatus->welcome]', e.message);
+  }
 }
