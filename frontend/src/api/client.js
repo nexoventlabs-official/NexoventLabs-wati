@@ -23,7 +23,9 @@ export const Contacts = {
   get: (id) => api.get(`/contacts/${id}`).then((r) => r.data),
   update: (id, body) => api.patch(`/contacts/${id}`, body).then((r) => r.data),
   markRead: (id) => api.post(`/contacts/${id}/read`).then((r) => r.data),
+  pin: (id, pinned) => api.post(`/contacts/${id}/pin`, { pinned }).then((r) => r.data),
   clearChat: (id) => api.delete(`/contacts/${id}/chat`).then((r) => r.data),
+  remove: (id) => api.delete(`/contacts/${id}`).then((r) => r.data),
   addNote: (id, text) => api.post(`/contacts/${id}/notes`, { text }).then((r) => r.data),
   deleteNote: (id, noteId) => api.delete(`/contacts/${id}/notes/${noteId}`).then((r) => r.data),
 };

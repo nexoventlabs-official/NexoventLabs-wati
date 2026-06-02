@@ -67,6 +67,9 @@ const ContactSchema = new mongoose.Schema(
       ),
     ],
     typing: { type: Boolean, default: false },
+    // Pin a conversation to the top of the chat list (panel-side preference).
+    pinned: { type: Boolean, default: false },
+    pinnedAt: { type: Date, default: null },
     // The category the customer last chose from the welcome menu (by tapping a
     // category button). Surfaced in the chat + admin panel so agents know what
     // the lead is interested in.

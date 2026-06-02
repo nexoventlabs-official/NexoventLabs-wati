@@ -67,18 +67,33 @@ export default function App() {
   useEffect(() => { load(); }, [load]);
 
   useEffect(() => {
+    const sortContacts = (arr) => arr.slice().sort((a, b) => {
+      // Pinned first (most recently pinned on top), then by last activity.
+      if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+      if (a.pinned && b.pinned) {
+        return new Date(b.pinnedAt || 0) - new Date(a.pinnedAt || 0);
+      }
+      return new Date(b.lastMessageAt || b.updatedAt) - new Date(a.lastMessageAt || a.updatedAt);
+    });
     const onUpsert = (c) => {
       setContacts(prev => {
         const idx = prev.findIndex(x => x._id === c._id);
-        if (idx === -1) return [c, ...prev];
-        const copy = prev.slice();
-        copy[idx] = { ...copy[idx], ...c };
-        copy.sort((a,b) => new Date(b.lastMessageAt||b.updatedAt) - new Date(a.lastMessageAt||a.updatedAt));
-        return copy;
+        let copy;
+        if (idx === -1) copy = [c, ...prev];
+        else { copy = prev.slice(); copy[idx] = { ...copy[idx], ...c }; }
+        return sortContacts(copy);
       });
     };
+    const onDelete = ({ contactId }) => {
+      setContacts(prev => prev.filter(x => x._id !== contactId));
+      setSelectedId(prev => (prev === contactId ? null : prev));
+    };
     socket.on('contact:upsert', onUpsert);
-    return () => socket.off('contact:upsert', onUpsert);
+    socket.on('contact:delete', onDelete);
+    return () => {
+      socket.off('contact:upsert', onUpsert);
+      socket.off('contact:delete', onDelete);
+    };
   }, []);
 
   // ---- Browser notifications --------------------------------------------------
@@ -166,6 +181,7 @@ export default function App() {
         setRange={setRange}
         onOpenTemplates={() => setTemplatesOpen(true)}
         onAddContact={load}
+        onContactsChanged={load}
         notifyEnabled={notifyEnabled && notifPerm === 'granted'}
         notifyPerm={notifPerm}
         onToggleNotifications={toggleNotifications}

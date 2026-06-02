@@ -15,7 +15,9 @@ exports.listContacts = async (req, res) => {
     if (from) filter.lastMessageAt.$gte = new Date(from);
     if (to) filter.lastMessageAt.$lte = new Date(to);
   }
-  const contacts = await Contact.find(filter).sort({ lastMessageAt: -1, updatedAt: -1 }).limit(500);
+  const contacts = await Contact.find(filter)
+    .sort({ pinned: -1, pinnedAt: -1, lastMessageAt: -1, updatedAt: -1 })
+    .limit(500);
   res.json(contacts);
 };
 
@@ -128,6 +130,47 @@ exports.clearChat = async (req, res) => {
     res.json({ ok: true, deletedMessages: del.deletedCount });
   } catch (e) {
     console.error('[clearChat]', e.message);
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// Toggle pin-to-top for a contact. Body: { pinned: true|false } (optional - omitted toggles).
+exports.togglePin = async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) return res.status(404).json({ error: 'Not found' });
+    const next = typeof req.body?.pinned === 'boolean' ? req.body.pinned : !contact.pinned;
+    contact.pinned = next;
+    contact.pinnedAt = next ? new Date() : null;
+    await contact.save();
+    emit('contact:upsert', contact);
+    res.json(contact);
+  } catch (e) {
+    console.error('[togglePin]', e.message);
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// Permanently delete a contact: removes the contact record, ALL its messages,
+// and the Cloudinary media folder for that number.
+exports.deleteContact = async (req, res) => {
+  try {
+    const contact = await Contact.findById(req.params.id);
+    if (!contact) return res.status(404).json({ error: 'Not found' });
+
+    const del = await Message.deleteMany({ contact: contact._id });
+
+    // Remove the Cloudinary folder holding this number's media (best effort).
+    deleteFolder(`wati_panel/${contact.waId}`).catch((e) =>
+      console.error('[deleteContact] cloudinary folder delete failed', e.message)
+    );
+
+    await contact.deleteOne();
+
+    emit('contact:delete', { contactId: req.params.id });
+    res.json({ ok: true, deletedMessages: del.deletedCount });
+  } catch (e) {
+    console.error('[deleteContact]', e.message);
     res.status(500).json({ error: 'Failed', details: e.message });
   }
 };

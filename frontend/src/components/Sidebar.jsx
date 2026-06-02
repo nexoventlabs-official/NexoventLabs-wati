@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Search, Filter, Plus, FileText, X, Bell, BellOff } from 'lucide-react';
+import { Search, Filter, Plus, FileText, X, Bell, BellOff, MoreVertical, Pin, PinOff, Trash2 } from 'lucide-react';
 import clsx from 'clsx';
 import dayjs from 'dayjs';
 import { Contacts } from '../api/client';
@@ -11,11 +11,13 @@ export default function Sidebar({
   onOpenTemplates, onAddContact,
   notifyEnabled = false, notifyPerm = 'default', onToggleNotifications,
   loading = false,
+  onContactsChanged,
 }) {
   const [showFilter, setShowFilter] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newNum, setNewNum] = useState('');
   const [newName, setNewName] = useState('');
+  const [menuId, setMenuId] = useState(null); // contact id whose dropdown is open
 
   // Refs for click-away: we whitelist both the popover body AND the trigger
   // button so clicking the trigger to close doesn't immediately re-open via
@@ -24,8 +26,10 @@ export default function Sidebar({
   const addBtnRef = useRef(null);
   const filterFormRef = useRef(null);
   const filterBtnRef = useRef(null);
+  const menuRef = useRef(null);
   useClickAway([addFormRef, addBtnRef], () => setShowAdd(false), showAdd);
   useClickAway([filterFormRef, filterBtnRef], () => setShowFilter(false), showFilter);
+  useClickAway([menuRef], () => setMenuId(null), !!menuId);
 
   async function handleAdd(e) {
     e.preventDefault();
@@ -35,6 +39,29 @@ export default function Sidebar({
     setNewNum('');
     setNewName('');
     onAddContact && onAddContact();
+  }
+
+  async function handlePin(c) {
+    setMenuId(null);
+    try {
+      await Contacts.pin(c._id, !c.pinned);
+      onContactsChanged && onContactsChanged();
+    } catch (e) {
+      alert(e?.response?.data?.error || 'Failed to update pin');
+    }
+  }
+
+  async function handleDelete(c) {
+    setMenuId(null);
+    const label = c.name || c.profileName || `+${c.waId}`;
+    if (!confirm(`Delete "${label}" and its entire chat (messages + media)? This cannot be undone.`)) return;
+    try {
+      await Contacts.remove(c._id);
+      if (selectedId === c._id) onSelect(null);
+      onContactsChanged && onContactsChanged();
+    } catch (e) {
+      alert(e?.response?.data?.error || 'Failed to delete contact');
+    }
   }
 
   return (
@@ -152,19 +179,20 @@ export default function Sidebar({
             No contacts yet.<br />Incoming WhatsApp messages or the + button will add them.
           </div>
         ) : contacts.map(c => (
-          <button
+          <div
             key={c._id}
             onClick={() => onSelect(c._id)}
             className={clsx(
-              'w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-wati-panel transition-colors',
+              'group relative w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-wati-panel transition-colors cursor-pointer',
               selectedId === c._id ? 'bg-wati-panel hover:bg-wati-panel' : 'border-b border-wati-border'
             )}
           >
             <Avatar name={c.name || c.profileName || c.waId} url={c.profilePicUrl} />
             <div className="flex-1 min-w-0">
               <div className="flex items-center justify-between">
-                <div className="font-medium text-wati-text truncate min-w-0">
-                  {c.name || c.profileName || `+${c.waId}`}
+                <div className="font-medium text-wati-text truncate min-w-0 flex items-center gap-1.5">
+                  {c.pinned && <Pin size={13} className="text-wati-primary shrink-0 fill-current" />}
+                  <span className="truncate">{c.name || c.profileName || `+${c.waId}`}</span>
                 </div>
                 <div className="text-[11px] text-wati-muted ml-2 shrink-0">
                   {c.lastMessageAt ? dayjs(c.lastMessageAt).format('h:mm A') : ''}
@@ -184,7 +212,41 @@ export default function Sidebar({
                 )}
               </div>
             </div>
-          </button>
+
+            {/* Per-contact dropdown trigger (appears on hover or when open) */}
+            <button
+              onClick={(e) => { e.stopPropagation(); setMenuId(menuId === c._id ? null : c._id); }}
+              className={clsx(
+                'absolute right-2 top-2 p-1 rounded-full hover:bg-white/10 text-wati-muted hover:text-wati-text transition-opacity',
+                menuId === c._id ? 'opacity-100 bg-white/10' : 'opacity-0 group-hover:opacity-100'
+              )}
+              title="Options"
+            >
+              <MoreVertical size={16} />
+            </button>
+
+            {menuId === c._id && (
+              <div
+                ref={menuRef}
+                onClick={(e) => e.stopPropagation()}
+                className="absolute right-2 top-9 z-30 w-44 bg-wati-panel border border-wati-border rounded-lg shadow-xl py-1 text-sm"
+              >
+                <button
+                  onClick={() => handlePin(c)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-wati-text hover:bg-white/5 text-left"
+                >
+                  {c.pinned ? <PinOff size={15} /> : <Pin size={15} />}
+                  {c.pinned ? 'Unpin' : 'Pin to top'}
+                </button>
+                <button
+                  onClick={() => handleDelete(c)}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-red-400 hover:bg-red-500/10 text-left"
+                >
+                  <Trash2 size={15} /> Delete
+                </button>
+              </div>
+            )}
+          </div>
         ))}
       </div>
     </aside>
