@@ -76,7 +76,11 @@ async function ensureFlowPublished() {
 async function buildCategoryFlowData() {
   const cats = await Category.find({ active: true }).sort({ sortOrder: 1, name: 1 }).lean();
   const bannerUrl = await flowImages.getUrl('welcome_flow_banner');
-  const bannerB64 = bannerUrl ? await urlToBase64(bannerUrl, { width: 1000, height: 200 }) : '';
+  // Match the TVK welcome-flow banner ratio: rendered at 1000x125 (8:1) in the
+  // flow JSON, encoded at 1600x200 q82 jpg so it stays crisp and small.
+  const bannerB64 = bannerUrl
+    ? await urlToBase64(bannerUrl, { width: 1600, height: 200, crop: 'fill', quality: 82 })
+    : '';
 
   // Encode each category logo (square-ish thumbnail) in parallel.
   const categories = await Promise.all(

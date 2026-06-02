@@ -53,7 +53,7 @@ function buildFlowJSON() {
               type: 'Image',
               src: '${data.banner}',
               width: 1000,
-              height: 200,
+              height: 125,
               'scale-type': 'cover',
               'alt-text': 'Nexovent Labs',
               visible: '${data.has_banner}',
