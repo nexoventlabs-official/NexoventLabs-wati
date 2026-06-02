@@ -7,6 +7,7 @@ import AdminReports from './AdminReports.jsx';
 import AdminCategories from './AdminCategories.jsx';
 import AdminFlowImages from './AdminFlowImages.jsx';
 import AdminWelcome from './AdminWelcome.jsx';
+import AdminCampaigns from './AdminCampaigns.jsx';
 
 const TOKEN_KEY = 'vanigan:adminToken';
 
@@ -94,6 +95,9 @@ export default function AdminApp() {
   }
   if (path.startsWith('/admin/welcome')) {
     return <AdminWelcome onNavigate={navigate} onLogout={handleLogout} />;
+  }
+  if (path.startsWith('/admin/campaigns')) {
+    return <AdminCampaigns onNavigate={navigate} onLogout={handleLogout} />;
   }
   // Default authed route
   return <AdminDashboard onNavigate={navigate} onLogout={handleLogout} />;

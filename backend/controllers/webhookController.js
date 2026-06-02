@@ -76,6 +76,28 @@ async function handleMessagesEvent(value) {
         }
         emit('message:update', payload);
       }
+
+      // Keep campaign recipient status in sync (matched by the wamid we stored
+      // when sending the welcome template).
+      try {
+        const CampaignContact = require('../models/CampaignContact');
+        const cc = await CampaignContact.findOne({ lastWamid: s.id });
+        if (cc) {
+          if (s.status === 'failed' && s.errors) {
+            const code = s.errors[0]?.code;
+            const notWa = code === 131026 || code === 131056 || /not.*whatsapp|invalid.*recipient/i.test(s.errors[0]?.message || s.errors[0]?.title || '');
+            cc.lastStatus = notWa ? 'not_whatsapp' : 'failed';
+            cc.lastError = metaErrors.summarize(s.errors);
+          } else if (['sent', 'delivered', 'read'].includes(s.status)) {
+            cc.lastStatus = s.status;
+            cc.lastError = '';
+          }
+          await cc.save();
+          emit('campaign:update', cc);
+        }
+      } catch (e) {
+        console.error('[status->campaign]', e.message);
+      }
     }
   }
 

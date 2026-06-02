@@ -7,7 +7,7 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 // Attach the admin JWT to /admin/* and /categories/* requests when present in
 // localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
-  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images') || config.url.startsWith('/welcome'))) {
+  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images') || config.url.startsWith('/welcome') || config.url.startsWith('/campaigns'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
       config.headers = config.headers || {};
@@ -94,7 +94,6 @@ export const FlowImages = {
 };
 
 // --- Welcome API (admin-only) ----------------------------------------------
-// Editable welcome message (header image, body, footer, CTA) + flow banner.
 export const Welcome = {
   get: () => api.get('/welcome').then((r) => r.data),
   update: (body) => api.patch('/welcome', body).then((r) => r.data),
@@ -105,6 +104,15 @@ export const Welcome = {
   submitTemplate: () => api.post('/welcome/template/submit').then((r) => r.data),
   refreshTemplate: () => api.post('/welcome/template/refresh').then((r) => r.data),
   sendTemplate: (waId) => api.post('/welcome/template/send', { waId }).then((r) => r.data),
+};
+
+// --- Campaigns API (admin-only) --------------------------------------------
+// Add numbers (deduped) and send the approved welcome template to selected ones.
+export const Campaigns = {
+  list: () => api.get('/campaigns').then((r) => r.data),
+  add: (body) => api.post('/campaigns', body).then((r) => r.data),
+  remove: (id) => api.delete(`/campaigns/${id}`).then((r) => r.data),
+  send: (ids) => api.post('/campaigns/send', { ids }).then((r) => r.data),
 };
 
 export const Admin = {
