@@ -82,7 +82,14 @@ exports.remove = async (req, res) => {
 // Body: { ids: [campaignContactId, ...] }  (omit/empty = all)
 exports.send = async (req, res) => {
   try {
-    const { status } = await welcomeTemplate.getStatus();
+    // Pull the live status from Meta first - our locally cached status may lag
+    // behind (webhook missed / not refreshed) even though Meta has approved it.
+    let status;
+    try {
+      ({ status } = await welcomeTemplate.refresh());
+    } catch {
+      ({ status } = await welcomeTemplate.getStatus());
+    }
     if (status !== 'APPROVED') {
       return res.status(400).json({
         error: `Welcome template is ${status}. It must be APPROVED by Meta before you can run a campaign.`,

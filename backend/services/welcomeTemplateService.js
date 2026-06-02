@@ -107,15 +107,39 @@ async function submit() {
   return getStatus();
 }
 
-// Refresh the template's approval status from Meta.
+// Refresh the template's approval status from Meta. Falls back to looking the
+// template up by name when we don't have a stored metaId yet (e.g. it was
+// created on a different environment/DB).
 async function refresh() {
-  const metaId = await Setting.get(META_ID_KEY, null);
-  if (!metaId) return getStatus();
+  const name = await getTemplateName();
+  const language = await getLanguage();
+  let metaId = await Setting.get(META_ID_KEY, null);
+
   try {
-    const data = await meta.getTemplateById(metaId);
-    await Setting.put(STATUS_KEY, (data.status || 'PENDING').toUpperCase());
+    if (metaId) {
+      const data = await meta.getTemplateById(metaId);
+      await Setting.put(STATUS_KEY, (data.status || 'PENDING').toUpperCase());
+    } else {
+      const list = await meta.listTemplates();
+      const found = (list.data || []).find((t) => t.name === name && (!language || t.language === language))
+        || (list.data || []).find((t) => t.name === name);
+      if (found) {
+        await Setting.put(META_ID_KEY, found.id);
+        await Setting.put(STATUS_KEY, (found.status || 'PENDING').toUpperCase());
+      }
+    }
   } catch (e) {
-    console.warn('[welcomeTemplate.refresh]', e.response?.data?.error?.message || e.message);
+    // If getTemplateById failed (stale id), try resolving by name.
+    try {
+      const list = await meta.listTemplates();
+      const found = (list.data || []).find((t) => t.name === name);
+      if (found) {
+        await Setting.put(META_ID_KEY, found.id);
+        await Setting.put(STATUS_KEY, (found.status || 'PENDING').toUpperCase());
+      }
+    } catch (e2) {
+      console.warn('[welcomeTemplate.refresh]', e2.response?.data?.error?.message || e2.message);
+    }
   }
   return getStatus();
 }
