@@ -4,10 +4,10 @@ export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 
-// Attach the admin JWT to /admin/* requests when present in localStorage so
-// the rest of the app's calls remain unauthenticated.
+// Attach the admin JWT to /admin/* and /categories/* requests when present in
+// localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
-  if (config.url && config.url.startsWith('/admin/')) {
+  if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
       config.headers = config.headers || {};
@@ -65,6 +65,20 @@ export const Uploads = {
 // --- Admin API -------------------------------------------------------------
 // All admin requests (except `login`) get a Bearer token attached by the
 // interceptor above when `vanigan:adminToken` is set in localStorage.
+
+// --- Categories API (admin-only) -------------------------------------------
+// Promotable categories shown in the WhatsApp welcome menu. Each one can be
+// mirrored to a Meta template for proactive broadcasts.
+export const Categories = {
+  list: () => api.get('/categories').then((r) => r.data),
+  get: (id) => api.get(`/categories/${id}`).then((r) => r.data),
+  create: (body) => api.post('/categories', body).then((r) => r.data),
+  update: (id, body) => api.patch(`/categories/${id}`, body).then((r) => r.data),
+  remove: (id) => api.delete(`/categories/${id}`).then((r) => r.data),
+  submit: (id) => api.post(`/categories/${id}/submit`).then((r) => r.data),
+  sendTest: (id, waId) => api.post(`/categories/${id}/send-test`, { waId }).then((r) => r.data),
+};
+
 export const Admin = {
   login: (username, password) =>
     api.post('/admin/login', { username, password }).then((r) => r.data),

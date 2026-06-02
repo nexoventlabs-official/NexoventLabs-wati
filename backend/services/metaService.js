@@ -101,6 +101,46 @@ async function sendInteractive(to, { kind, header, body, footer, action, context
   return data;
 }
 
+// Send an interactive LIST message. WhatsApp shows a tappable menu with up to
+// 10 rows (grouped in sections). Use this for the "choose a category" menu when
+// there are more than 3 options (reply buttons max out at 3).
+//
+// `rows` = [{ id, title, description }]  (title <= 24 chars, description <= 72)
+async function sendInteractiveList(to, { header, body, footer, buttonText, rows, context }) {
+  const interactive = {
+    type: 'list',
+    body: { text: body || ' ' },
+    action: {
+      button: (buttonText || 'View options').slice(0, 20),
+      sections: [
+        {
+          title: 'Categories',
+          rows: (rows || []).slice(0, 10).map((r) => ({
+            id: String(r.id).slice(0, 200),
+            title: String(r.title || '').slice(0, 24),
+            ...(r.description ? { description: String(r.description).slice(0, 72) } : {}),
+          })),
+        },
+      ],
+    },
+  };
+  // LIST messages only support a TEXT header (no media header allowed by Meta).
+  if (header && header.type === 'text' && header.text) {
+    interactive.header = { type: 'text', text: header.text.slice(0, 60) };
+  }
+  if (footer) interactive.footer = { text: footer.slice(0, 60) };
+
+  const payload = {
+    messaging_product: 'whatsapp',
+    to,
+    type: 'interactive',
+    interactive,
+  };
+  if (context) payload.context = { message_id: context };
+  const { data } = await axios.post(`${GRAPH()}/${PHONE_ID()}/messages`, payload, { headers: authHeaders() });
+  return data;
+}
+
 async function sendReaction(to, messageId, emoji) {
   const payload = {
     messaging_product: 'whatsapp',
@@ -254,6 +294,7 @@ module.exports = {
   sendText,
   sendMedia,
   sendInteractive,
+  sendInteractiveList,
   sendReaction,
   sendTemplateMessage,
   markAsRead,

@@ -67,6 +67,22 @@ const ContactSchema = new mongoose.Schema(
       ),
     ],
     typing: { type: Boolean, default: false },
+    // The category the customer last chose from the welcome menu (by tapping a
+    // category button). Surfaced in the chat + admin panel so agents know what
+    // the lead is interested in.
+    selectedCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', default: null },
+    selectedCategoryName: { type: String, default: '' },
+    selectedCategoryAt: { type: Date, default: null },
+    // Append-only log of every category the contact has shown interest in.
+    categoryHistory: [
+      new mongoose.Schema(
+        {
+          category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category' },
+          name: { type: String, default: '' },
+        },
+        { timestamps: { createdAt: true, updatedAt: false }, _id: true }
+      ),
+    ],
     // Last time the auto-welcome (video + Register CTA) was successfully sent
     // to this contact. Used to suppress duplicate welcomes when the same user
     // sends multiple greetings in a short window (see WELCOME_COOLDOWN_MS in

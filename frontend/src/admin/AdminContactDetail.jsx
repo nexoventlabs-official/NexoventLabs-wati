@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Phone, MessageCircle, Calendar, History, StickyNote, Globe2 } from 'lucide-react';
+import { Phone, MessageCircle, Calendar, History, StickyNote, Globe2, Tag } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
 import { Admin } from '../api/client';
 import { CALL_STATUSES, statusColor } from '../utils/callStatus';
@@ -96,6 +96,13 @@ export default function AdminContactDetail({ contactId, onBack, onLogout }) {
                 </Row>
                 {country?.name && (
                   <Row icon={Globe2} label="Country">{country.name}</Row>
+                )}
+                {contact.selectedCategoryName && (
+                  <Row icon={Tag} label="Interested in">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[12px] font-semibold bg-admin-accent/10 text-admin-accent">
+                      {contact.selectedCategoryName}
+                    </span>
+                  </Row>
                 )}
                 <Row icon={Calendar} label="First message">
                   {contact.firstMessageAt

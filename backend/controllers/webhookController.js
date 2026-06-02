@@ -6,6 +6,7 @@ const { emit } = require('../services/socketService');
 const { cloudinary } = require('../config/cloudinary');
 const metaErrors = require('../utils/metaErrors');
 const redis = require('../services/redisService');
+const bot = require('../services/botService');
 
 exports.verify = (req, res) => {
   const mode = req.query['hub.mode'];
@@ -147,6 +148,29 @@ async function handleMessagesEvent(value) {
           saved = await Message.create({ ...base, type: 'text', text: bodyText });
           contact.lastMessagePreview = bodyText.slice(0, 100);
 
+          // Auto-welcome: when the customer greets us ("hi", "hello", "menu",
+          // "demo"...), reply with the category menu. Throttled so a burst of
+          // greetings doesn't spam multiple menus. Runs against a freshly
+          // loaded contact instance so it never races the main-flow save below
+          // (which would trigger a Mongoose ParallelSaveError).
+          if (bot.isGreeting(bodyText)) {
+            const lastWelcome = contact.welcomeSentAt ? contact.welcomeSentAt.getTime() : 0;
+            if (Date.now() - lastWelcome > bot.WELCOME_COOLDOWN_MS) {
+              const contactId = contact._id;
+              (async () => {
+                try {
+                  const fresh = await Contact.findById(contactId);
+                  if (!fresh) return;
+                  await bot.sendWelcomeMenu(fresh);
+                  fresh.welcomeSentAt = new Date();
+                  await fresh.save();
+                } catch (e) {
+                  console.error('[welcome]', e.response?.data?.error?.message || e.message);
+                }
+              })();
+            }
+          }
+
         } else if (['image', 'video', 'audio', 'document', 'sticker'].includes(m.type)) {
           const media = m[m.type];
           const mediaId = media?.id;
@@ -227,6 +251,29 @@ async function handleMessagesEvent(value) {
           saved = await Message.create({ ...base, type: 'interactive', text: txt });
           contact.lastMessagePreview = txt;
 
+          // Category selection: the welcome menu's buttons/rows carry ids like
+          // "cat_<categoryId>". When the customer taps one, mark the chosen
+          // category on the contact and send that category's promo (image
+          // header + body + DEMO CTA).
+          const replyId =
+            m.interactive?.button_reply?.id || m.interactive?.list_reply?.id || '';
+          if (String(replyId).startsWith(bot.CATEGORY_ID_PREFIX)) {
+            const contactId = contact._id;
+            (async () => {
+              try {
+                const category = await bot.resolveCategoryFromReplyId(replyId);
+                if (!category) return;
+                // Reload a fresh instance so we don't double-save the same doc.
+                const fresh = await Contact.findById(contactId);
+                if (!fresh) return;
+                await bot.markCategoryChosen(fresh, category);
+                await bot.sendCategoryPromo(fresh, category);
+              } catch (e) {
+                console.error('[category-promo]', e.response?.data?.error?.message || e.message);
+              }
+            })();
+          }
+
           // Auto-reply: if the tapped button belongs to a template with a configured
           // `replyText`, send that text back. Best-effort - failures don't break ingest.
           if (m.interactive?.button_reply && base.replyToWamid) {
@@ -292,5 +339,20 @@ async function handleTemplateStatus(value) {
     doc.lastSyncedAt = new Date();
     await doc.save();
     emit('template:update', doc);
+
+    // If this template backs a promo category, mirror the status onto it so
+    // the admin Categories page reflects approval/rejection without a sync.
+    try {
+      const Category = require('../models/Category');
+      const cat = await Category.findOne({ templateId: doc._id });
+      if (cat) {
+        cat.metaStatus = doc.status;
+        cat.metaRejectedReason = doc.rejectedReason || '';
+        await cat.save();
+        emit('category:update', cat);
+      }
+    } catch (e) {
+      console.error('[handleTemplateStatus->category]', e.message);
+    }
   }
 }
