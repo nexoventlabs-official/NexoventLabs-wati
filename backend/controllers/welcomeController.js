@@ -1,5 +1,6 @@
 const welcomeService = require('../services/welcomeService');
 const welcomeTemplate = require('../services/welcomeTemplateService');
+const followUp = require('../services/followUpService');
 const flowImages = require('../services/flowImages');
 const Contact = require('../models/Contact');
 const { deleteByUrl } = require('../config/cloudinary');
@@ -76,7 +77,13 @@ exports.update = async (req, res) => {
 
 // PUT /api/welcome/image/:slot  body: { url, publicId? }
 // slot = 'header' | 'banner'. Image bytes are uploaded via /api/upload first.
-const SLOT_KEY = { header: 'welcome_header', banner: 'welcome_flow_banner' };
+const SLOT_KEY = {
+  header: 'welcome_header',
+  banner: 'welcome_flow_banner',
+  followup: 'followup_header',
+  interested: 'interested_header',
+  not_interested: 'not_interested_header',
+};
 
 exports.setImage = async (req, res) => {
   try {
@@ -110,6 +117,27 @@ exports.removeImage = async (req, res) => {
     if (doc?.url) deleteByUrl(doc.url).catch(() => {});
     await FlowImage.updateOne({ key }, { $set: { url: '', publicId: '' } });
     const data = await welcomeService.getWelcome();
+    res.json(data);
+  } catch (e) {
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// ---- Follow-up (Interested / Not Interested) config ----------------------
+
+// GET /api/welcome/followup -> editable copy + call number + delay + header images.
+exports.getFollowUp = async (_req, res) => {
+  try {
+    res.json(await followUp.getConfig());
+  } catch (e) {
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// PATCH /api/welcome/followup -> save editable follow-up config.
+exports.updateFollowUp = async (req, res) => {
+  try {
+    const data = await followUp.setConfig(req.body || {});
     res.json(data);
   } catch (e) {
     res.status(500).json({ error: 'Failed', details: e.message });

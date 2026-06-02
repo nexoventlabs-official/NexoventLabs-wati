@@ -7,6 +7,7 @@ const { cloudinary } = require('../config/cloudinary');
 const metaErrors = require('../utils/metaErrors');
 const redis = require('../services/redisService');
 const bot = require('../services/botService');
+const followUp = require('../services/followUpService');
 
 exports.verify = (req, res) => {
   const mode = req.query['hub.mode'];
@@ -300,6 +301,34 @@ async function handleMessagesEvent(value) {
                 await bot.sendCategoryPromo(fresh, category);
               } catch (e) {
                 console.error('[category-promo]', e.response?.data?.error?.message || e.message);
+              }
+            })();
+          }
+
+          // Lead follow-up: customer tapped Interested / Not Interested on the
+          // 5-minute prompt. Stamp the lead response (also mirrored to callStatus
+          // so the admin dashboard shows interested/not_interested) and send the
+          // branched reply with a Call CTA.
+          const tappedId = m.interactive?.button_reply?.id || '';
+          if (tappedId === followUp.INTERESTED_ID || tappedId === followUp.NOT_INTERESTED_ID) {
+            const interested = tappedId === followUp.INTERESTED_ID;
+            const contactId2 = contact._id;
+            (async () => {
+              try {
+                const fresh = await Contact.findById(contactId2);
+                if (!fresh) return;
+                fresh.leadResponse = interested ? 'interested' : 'not_interested';
+                fresh.leadResponseAt = new Date();
+                const newStatus = interested ? 'interested' : 'not_interested';
+                if (fresh.callStatus !== newStatus) {
+                  fresh.callStatus = newStatus;
+                  fresh.callStatusHistory.push({ status: newStatus });
+                }
+                await fresh.save();
+                emit('contact:upsert', fresh);
+                await followUp.sendLeadReply(fresh, interested);
+              } catch (e) {
+                console.error('[lead-response]', e.response?.data?.error?.message || e.message);
               }
             })();
           }

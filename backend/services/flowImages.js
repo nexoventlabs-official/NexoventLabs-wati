@@ -16,6 +16,21 @@ const IMAGE_KEYS = [
     label: 'Welcome flow banner (top of the category picker screen)',
     group: 'welcome',
   },
+  {
+    key: 'followup_header',
+    label: 'Follow-up prompt header image (Interested / Not Interested message)',
+    group: 'followup',
+  },
+  {
+    key: 'interested_header',
+    label: 'Interested reply header image (Our team will contact you)',
+    group: 'followup',
+  },
+  {
+    key: 'not_interested_header',
+    label: 'Not Interested reply header image',
+    group: 'followup',
+  },
 ];
 
 async function ensureKeysExist() {

@@ -75,8 +75,13 @@ const PORT = process.env.PORT || 5000;
 // Init Redis (non-blocking - app works without it, just no tiebreak ordering)
 redis.init();
 
+// Background scheduler: sends the 5-minute Interested / Not Interested
+// follow-up prompt to leads who picked a service.
+const followUpScheduler = require('./services/followUpScheduler');
+
 connectDB()
   .then(() => {
+    followUpScheduler.start();
     server.listen(PORT, () => console.log(`[server] http://localhost:${PORT}`));
   })
   .catch((err) => {

@@ -88,6 +88,13 @@ const ContactSchema = new mongoose.Schema(
     // sends multiple greetings in a short window (see WELCOME_COOLDOWN_MS in
     // webhookController).
     welcomeSentAt: { type: Date, default: null },
+    // Lead follow-up: 5 min after a customer picks a service we send an
+    // Interested / Not Interested prompt. These fields drive the scheduler.
+    followUpDueAt: { type: Date, default: null, index: true },
+    followUpSent: { type: Boolean, default: false },
+    // 'none' until they answer the follow-up; then 'interested'/'not_interested'.
+    leadResponse: { type: String, enum: ['none', 'interested', 'not_interested'], default: 'none' },
+    leadResponseAt: { type: Date, default: null },
   },
   { timestamps: true }
 );

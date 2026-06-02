@@ -104,6 +104,9 @@ export const Welcome = {
   submitTemplate: () => api.post('/welcome/template/submit').then((r) => r.data),
   refreshTemplate: () => api.post('/welcome/template/refresh').then((r) => r.data),
   sendTemplate: (waId) => api.post('/welcome/template/send', { waId }).then((r) => r.data),
+  // Follow-up (Interested / Not Interested) config.
+  getFollowUp: () => api.get('/welcome/followup').then((r) => r.data),
+  updateFollowUp: (body) => api.patch('/welcome/followup', body).then((r) => r.data),
 };
 
 // --- Campaigns API (admin-only) --------------------------------------------

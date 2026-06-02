@@ -3,6 +3,7 @@ const Message = require('../models/Message');
 const meta = require('./metaService');
 const flowService = require('./flowService');
 const welcomeService = require('./welcomeService');
+const followUp = require('./followUpService');
 const { emit } = require('./socketService');
 const redis = require('./redisService');
 const { toJpgUrl } = require('./imageBase64');
@@ -249,6 +250,12 @@ async function markCategoryChosen(contact, category) {
   contact.categoryHistory.push({ category: category._id, name: category.name });
   await contact.save();
   emit('contact:upsert', contact);
+  // Schedule the 5-minute Interested / Not Interested follow-up prompt.
+  try {
+    await followUp.scheduleFollowUp(contact);
+  } catch (e) {
+    console.error('[markCategoryChosen] scheduleFollowUp failed:', e.message);
+  }
 }
 
 // Resolve a category from an interactive reply id (button_reply / list_reply).
