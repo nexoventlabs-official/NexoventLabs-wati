@@ -1,19 +1,20 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   Plus, Trash2, X, Send, RefreshCw, Megaphone, CheckCircle2, Clock, XCircle,
-  AlertTriangle, Phone,
+  AlertTriangle, Phone, CalendarClock, CalendarCheck, BanIcon,
 } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
 import { Campaigns } from '../api/client';
 import { socket } from '../api/socket';
 
 const STATUS = {
-  queued: { label: 'Queued', icon: <Clock size={13} />, cls: 'bg-slate-100 text-slate-600 border-slate-200' },
-  sent: { label: 'Sent', icon: <CheckCircle2 size={13} />, cls: 'bg-blue-100 text-blue-700 border-blue-200' },
-  delivered: { label: 'Delivered', icon: <CheckCircle2 size={13} />, cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  read: { label: 'Read', icon: <CheckCircle2 size={13} />, cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  not_whatsapp: { label: 'Not on WhatsApp', icon: <AlertTriangle size={13} />, cls: 'bg-amber-100 text-amber-700 border-amber-200' },
-  failed: { label: 'Failed', icon: <XCircle size={13} />, cls: 'bg-rose-100 text-rose-700 border-rose-200' },
+  queued:       { label: 'Queued',           icon: <Clock size={13} />,         cls: 'bg-slate-100 text-slate-600 border-slate-200' },
+  scheduled:    { label: 'Scheduled',        icon: <CalendarClock size={13} />, cls: 'bg-violet-100 text-violet-700 border-violet-200' },
+  sent:         { label: 'Sent',             icon: <CheckCircle2 size={13} />,  cls: 'bg-blue-100 text-blue-700 border-blue-200' },
+  delivered:    { label: 'Delivered',        icon: <CheckCircle2 size={13} />,  cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  read:         { label: 'Read',             icon: <CheckCircle2 size={13} />,  cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+  not_whatsapp: { label: 'Not on WhatsApp',  icon: <AlertTriangle size={13} />, cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  failed:       { label: 'Failed',           icon: <XCircle size={13} />,       cls: 'bg-rose-100 text-rose-700 border-rose-200' },
 };
 
 function fmtPhone(waId) {
@@ -21,14 +22,15 @@ function fmtPhone(waId) {
 }
 
 export default function AdminCampaigns({ onNavigate, onLogout }) {
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [toast, setToast] = useState(null);
-  const [selected, setSelected] = useState(() => new Set());
-  const [adding, setAdding] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [items, setItems]           = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState('');
+  const [toast, setToast]           = useState(null);
+  const [selected, setSelected]     = useState(() => new Set());
+  const [adding, setAdding]         = useState(false);
+  const [sending, setSending]       = useState(false);
+  const [deleting, setDeleting]     = useState(false);
+  const [showSendModal, setShowSendModal] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,23 +86,6 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
     }
   }
 
-  async function sendSelected() {
-    const ids = [...selected];
-    if (!ids.length) { showToast('error', 'Select at least one contact.'); return; }
-    if (!confirm(`Send the welcome template to ${ids.length} contact(s)?`)) return;
-    setSending(true);
-    try {
-      const r = await Campaigns.send(ids);
-      showToast('success', `Done. Sent ${r.sent}/${r.total}${r.failed ? `, ${r.failed} failed` : ''}.`);
-      setSelected(new Set());
-      load();
-    } catch (e) {
-      showToast('error', e?.response?.data?.error || e.message);
-    } finally {
-      setSending(false);
-    }
-  }
-
   async function deleteSelected() {
     const ids = [...selected];
     if (!ids.length) { showToast('error', 'Select at least one contact.'); return; }
@@ -118,7 +103,48 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
     }
   }
 
+  async function cancelScheduleSelected() {
+    const ids = [...selected];
+    if (!ids.length) { showToast('error', 'Select at least one contact.'); return; }
+    if (!confirm(`Cancel scheduled send for ${ids.length} contact(s)?`)) return;
+    try {
+      const r = await Campaigns.cancelSchedule(ids);
+      showToast('success', `Cancelled schedule for ${r.cancelled} contact(s).`);
+      load();
+      setSelected(new Set());
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    }
+  }
+
+  // Called after the send/schedule modal confirms
+  async function handleSendOrSchedule({ mode, scheduledAt }) {
+    const ids = [...selected];
+    setSending(true);
+    setShowSendModal(false);
+    try {
+      if (mode === 'now') {
+        const r = await Campaigns.send(ids);
+        showToast('success', `Done. Sent ${r.sent}/${r.total}${r.failed ? `, ${r.failed} failed` : ''}.`);
+      } else {
+        const r = await Campaigns.schedule(ids, scheduledAt);
+        const dt = new Date(scheduledAt).toLocaleString();
+        showToast('success', `Scheduled ${r.scheduled} contact(s) for ${dt}.`);
+      }
+      setSelected(new Set());
+      load();
+    } catch (e) {
+      showToast('error', e?.response?.data?.error || e.message);
+    } finally {
+      setSending(false);
+    }
+  }
+
   const allChecked = items.length > 0 && selected.size === items.length;
+  const anyScheduled = [...selected].some((id) => {
+    const item = items.find((x) => x._id === id);
+    return item?.lastStatus === 'scheduled';
+  });
 
   return (
     <AdminShell active="campaigns" onNavigate={onNavigate} onLogout={onLogout} title="Campaign">
@@ -150,20 +176,36 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
           <div className="text-[13px] text-slate-500 font-medium">
             {items.length} contact{items.length === 1 ? '' : 's'} · {selected.size} selected
           </div>
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
             <button
               onClick={load}
               className="inline-flex items-center gap-2 px-3 py-2 border border-slate-200 rounded-xl text-sm bg-white hover:bg-slate-50 text-slate-700 font-medium"
             >
               <RefreshCw size={15} className={loading ? 'animate-spin' : ''} /> Refresh
             </button>
+
+            {/* Cancel Schedule button — only when any selected contacts are scheduled */}
+            {anyScheduled && (
+              <button
+                onClick={cancelScheduleSelected}
+                disabled={selected.size === 0}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-violet-200 text-violet-700 text-sm font-semibold hover:bg-violet-50 disabled:opacity-50"
+              >
+                <BanIcon size={15} /> Cancel schedule
+              </button>
+            )}
+
             <button
-              onClick={sendSelected}
+              onClick={() => {
+                if (selected.size === 0) { showToast('error', 'Select at least one contact.'); return; }
+                setShowSendModal(true);
+              }}
               disabled={sending || selected.size === 0}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 text-white text-sm font-semibold hover:bg-slate-700 disabled:opacity-50"
             >
-              <Send size={15} /> {sending ? 'Sending…' : `Send to selected (${selected.size})`}
+              <Send size={15} /> {sending ? 'Processing…' : `Send to selected (${selected.size})`}
             </button>
+
             <button
               onClick={deleteSelected}
               disabled={deleting || selected.size === 0}
@@ -184,7 +226,7 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
                 <th className="text-left font-semibold px-4 py-3">Contact</th>
                 <th className="text-left font-semibold px-4 py-3">Mobile</th>
                 <th className="text-left font-semibold px-4 py-3">Status</th>
-                <th className="text-left font-semibold px-4 py-3">Last sent</th>
+                <th className="text-left font-semibold px-4 py-3">Last sent / Scheduled</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -237,7 +279,9 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-[13px]">
-                        {c.lastSentAt ? new Date(c.lastSentAt).toLocaleString() : '—'}
+                        {c.lastStatus === 'scheduled' && c.scheduledAt
+                          ? <span className="text-violet-600 font-medium flex items-center gap-1"><CalendarCheck size={13} />{new Date(c.scheduledAt).toLocaleString()}</span>
+                          : c.lastSentAt ? new Date(c.lastSentAt).toLocaleString() : '—'}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => del(c)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
@@ -265,6 +309,14 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
         />
       )}
 
+      {showSendModal && (
+        <SendOrScheduleModal
+          count={selected.size}
+          onClose={() => setShowSendModal(false)}
+          onConfirm={handleSendOrSchedule}
+        />
+      )}
+
       {toast && (
         <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm flex items-start gap-2 max-w-sm ${toast.type === 'error' ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'}`}>
           <span className="flex-1 whitespace-pre-line">{toast.msg}</span>
@@ -275,6 +327,162 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
   );
 }
 
+/* ─────────────────────────────────────────────────────────
+   Send-or-Schedule modal
+   ───────────────────────────────────────────────────────── */
+function SendOrScheduleModal({ count, onClose, onConfirm }) {
+  const [mode, setMode] = useState('now'); // 'now' | 'schedule'
+
+  // Build min datetime: 1 minute from now, rounded up to the next minute.
+  function getMinDateTime() {
+    const d = new Date(Date.now() + 60 * 1000);
+    d.setSeconds(0, 0);
+    // Format as "YYYY-MM-DDTHH:MM" for datetime-local input
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  const [minDT] = useState(getMinDateTime);
+  const [scheduledDT, setScheduledDT] = useState('');
+  const [dtError, setDtError] = useState('');
+
+  function validate() {
+    if (mode === 'now') return true;
+    if (!scheduledDT) { setDtError('Please pick a date and time.'); return false; }
+
+    const chosen = new Date(scheduledDT);
+    const now = new Date();
+
+    if (isNaN(chosen.getTime())) { setDtError('Invalid date/time.'); return false; }
+    if (chosen <= now) { setDtError('Scheduled time must be in the future.'); return false; }
+    if (chosen.getTime() - now.getTime() < 60 * 1000) {
+      setDtError('Schedule at least 1 minute ahead.'); return false;
+    }
+    setDtError('');
+    return true;
+  }
+
+  function handleConfirm() {
+    if (!validate()) return;
+    onConfirm({
+      mode,
+      scheduledAt: mode === 'schedule' ? new Date(scheduledDT).toISOString() : null,
+    });
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in"
+      onMouseDown={onClose}
+    >
+      <div
+        className="bg-white w-full max-w-md rounded-2xl shadow-premium-hover"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <h3 className="font-bold text-slate-800 text-lg">Send template</h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-500">
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-6 space-y-5">
+          <p className="text-[14px] text-slate-600">
+            You're about to send the welcome template to <span className="font-semibold text-slate-800">{count} contact{count !== 1 ? 's' : ''}</span>. Choose when to send it.
+          </p>
+
+          {/* Mode cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setMode('now')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center ${
+                mode === 'now'
+                  ? 'border-admin-accent bg-admin-accent/5 text-admin-accent'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-600'
+              }`}
+            >
+              <Send size={22} />
+              <span className="font-semibold text-[13px]">Send now</span>
+              <span className="text-[12px] opacity-70">Deliver immediately</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMode('schedule')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all text-center ${
+                mode === 'schedule'
+                  ? 'border-violet-500 bg-violet-50 text-violet-700'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-600'
+              }`}
+            >
+              <CalendarClock size={22} />
+              <span className="font-semibold text-[13px]">Schedule</span>
+              <span className="text-[12px] opacity-70">Pick a future time</span>
+            </button>
+          </div>
+
+          {/* Date/time picker — only when schedule mode */}
+          {mode === 'schedule' && (
+            <div className="space-y-2">
+              <label className="text-[12px] uppercase tracking-wider font-semibold text-slate-500 block">
+                Date &amp; time
+              </label>
+              <input
+                type="datetime-local"
+                min={minDT}
+                value={scheduledDT}
+                onChange={(e) => { setScheduledDT(e.target.value); setDtError(''); }}
+                className="adm-input w-full"
+              />
+              {dtError && (
+                <p className="text-[12px] text-rose-600 flex items-center gap-1">
+                  <XCircle size={13} /> {dtError}
+                </p>
+              )}
+              {scheduledDT && !dtError && (
+                <p className="text-[12px] text-violet-600 flex items-center gap-1">
+                  <CalendarCheck size={13} />
+                  Will send on {new Date(scheduledDT).toLocaleString()}
+                </p>
+              )}
+              <p className="text-[12px] text-slate-400">
+                Times are shown in your local timezone. Schedule must be at least 1 minute from now.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100">
+          <button
+            onClick={onClose}
+            className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            className={`px-5 py-2.5 rounded-xl text-white text-sm font-semibold shadow-md transition-all ${
+              mode === 'now'
+                ? 'bg-gradient-to-r from-slate-700 to-slate-800 hover:from-slate-800 hover:to-slate-900'
+                : 'bg-gradient-to-r from-violet-600 to-violet-700 hover:from-violet-700 hover:to-violet-800'
+            }`}
+          >
+            {mode === 'now' ? <span className="flex items-center gap-2"><Send size={14} /> Send now</span>
+                            : <span className="flex items-center gap-2"><CalendarClock size={14} /> Confirm schedule</span>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
+   Add-numbers modal (unchanged)
+   ───────────────────────────────────────────────────────── */
 function AddModal({ onClose, onAdded, onError }) {
   const [numberInput, setNumberInput] = useState('');
   const [queuedNumbers, setQueuedNumbers] = useState([]);

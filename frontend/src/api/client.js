@@ -126,6 +126,8 @@ export const Campaigns = {
   remove: (id) => api.delete(`/campaigns/${id}`).then((r) => r.data),
   removeMany: (ids) => api.post('/campaigns/delete-many', { ids }).then((r) => r.data),
   send: (ids) => api.post('/campaigns/send', { ids }).then((r) => r.data),
+  schedule: (ids, scheduledAt) => api.post('/campaigns/schedule', { ids, scheduledAt }).then((r) => r.data),
+  cancelSchedule: (ids) => api.post('/campaigns/cancel-schedule', { ids }).then((r) => r.data),
 };
 
 export const Admin = {

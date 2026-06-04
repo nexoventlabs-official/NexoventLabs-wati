@@ -80,10 +80,13 @@ redis.init();
 // Background scheduler: sends the 5-minute Interested / Not Interested
 // follow-up prompt to leads who picked a service.
 const followUpScheduler = require('./services/followUpScheduler');
+// Background scheduler: fires campaign sends that were scheduled for a future time.
+const campaignScheduler = require('./services/campaignScheduler');
 
 connectDB()
   .then(() => {
     followUpScheduler.start();
+    campaignScheduler.start();
     server.listen(PORT, () => console.log(`[server] http://localhost:${PORT}`));
   })
   .catch((err) => {

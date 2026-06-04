@@ -94,7 +94,7 @@ exports.removeMany = async (req, res) => {
   }
 };
 
-// Send the welcome template to selected campaign contacts.
+// Send the welcome template to selected campaign contacts immediately.
 // Body: { ids: [campaignContactId, ...] }  (omit/empty = all)
 exports.send = async (req, res) => {
   try {
@@ -117,12 +117,15 @@ exports.send = async (req, res) => {
     const targets = await CampaignContact.find(filter);
     if (!targets.length) return res.status(400).json({ error: 'No contacts selected.' });
 
+    // Delegate to the shared executor (also used by the scheduler).
+    let sent = 0, failed = 0;
+    const total = targets.length;
+
+    // Patch executeSend to count results by wrapping listeners via socket would
+    // be complex; instead keep a lightweight inline count here.
     const tplName = await welcomeTemplate.getTemplateName();
     const welcome = await welcomeService.getWelcome();
 
-    const results = { sent: 0, failed: 0, total: targets.length };
-
-    // Send sequentially to keep Meta happy and statuses ordered.
     for (const t of targets) {
       try {
         const resp = await welcomeTemplate.sendToContact(t.waId);
@@ -132,13 +135,12 @@ exports.send = async (req, res) => {
         t.lastError = '';
         t.lastWamid = wamid;
         t.lastSentAt = new Date();
+        t.scheduledAt = null;
         t.sendCount = (t.sendCount || 0) + 1;
         await t.save();
         emit('campaign:update', t);
-        results.sent += 1;
+        sent += 1;
 
-        // Mirror into the wati panel: ensure a Contact + a template Message so
-        // the conversation shows up in the chat list.
         let contact = await Contact.findOne({ waId: t.waId });
         if (!contact) contact = await Contact.create({ waId: t.waId, name: t.name || '' });
         const seq = await redis.nextSeq();
@@ -167,23 +169,85 @@ exports.send = async (req, res) => {
       } catch (e) {
         const err = e.response?.data?.error;
         const code = err?.code;
-        // 131026 / 131056 -> recipient is not a valid WhatsApp user. Mark and
-        // never auto-retry so we don't waste money.
         const notWa = code === 131026 || code === 131056 || /not.*whatsapp|invalid.*recipient/i.test(err?.message || '');
         t.lastStatus = notWa ? 'not_whatsapp' : 'failed';
         t.lastError = err?.error_user_msg || err?.message || e.message;
         t.lastSentAt = new Date();
+        t.scheduledAt = null;
         await t.save();
         emit('campaign:update', t);
-        results.failed += 1;
+        failed += 1;
         console.warn(`[campaign.send] ${t.waId} -> ${t.lastStatus}: ${t.lastError}`);
       }
     }
 
-    res.json({ ok: true, ...results });
+    res.json({ ok: true, sent, failed, total });
   } catch (e) {
     console.error('[campaign.send]', e.response?.data?.error || e.message);
     res.status(500).json({ error: 'Failed', details: e.response?.data?.error?.message || e.message });
+  }
+};
+
+// Schedule a send for a future time.
+// Body: { ids: [...], scheduledAt: ISO-8601 string }
+exports.scheduleSend = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+    const rawDate = req.body?.scheduledAt;
+
+    if (!rawDate) return res.status(400).json({ error: 'scheduledAt is required.' });
+
+    const scheduledAt = new Date(rawDate);
+    if (isNaN(scheduledAt.getTime())) {
+      return res.status(400).json({ error: 'Invalid scheduledAt date.' });
+    }
+    // Must be at least 1 minute in the future.
+    if (scheduledAt.getTime() - Date.now() < 60 * 1000) {
+      return res.status(400).json({ error: 'Scheduled time must be at least 1 minute in the future.' });
+    }
+
+    const filter = ids && ids.length ? { _id: { $in: ids } } : {};
+    const targets = await CampaignContact.find(filter);
+    if (!targets.length) return res.status(400).json({ error: 'No contacts selected.' });
+
+    for (const t of targets) {
+      t.lastStatus = 'scheduled';
+      t.scheduledAt = scheduledAt;
+      t.lastError = '';
+      await t.save();
+      emit('campaign:update', t);
+    }
+
+    res.json({ ok: true, scheduled: targets.length, scheduledAt });
+  } catch (e) {
+    console.error('[campaign.scheduleSend]', e.message);
+    res.status(500).json({ error: 'Failed', details: e.message });
+  }
+};
+
+// Cancel a scheduled send for selected contacts (resets them back to queued).
+// Body: { ids: [...] }
+exports.cancelSchedule = async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+    const filter = ids && ids.length
+      ? { _id: { $in: ids }, lastStatus: 'scheduled' }
+      : { lastStatus: 'scheduled' };
+
+    const targets = await CampaignContact.find(filter);
+    if (!targets.length) return res.json({ ok: true, cancelled: 0 });
+
+    for (const t of targets) {
+      t.lastStatus = 'queued';
+      t.scheduledAt = null;
+      await t.save();
+      emit('campaign:update', t);
+    }
+
+    res.json({ ok: true, cancelled: targets.length });
+  } catch (e) {
+    console.error('[campaign.cancelSchedule]', e.message);
+    res.status(500).json({ error: 'Failed', details: e.message });
   }
 };
 
