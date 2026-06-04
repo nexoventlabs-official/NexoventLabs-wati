@@ -4,7 +4,7 @@ import ChatPanel from './components/ChatPanel.jsx';
 import TemplatesDrawer from './components/TemplatesDrawer.jsx';
 import ContactDetailsPanel from './components/ContactDetailsPanel.jsx';
 import StaffLogin from './components/StaffLogin.jsx';
-import { Contacts, Admin } from './api/client';
+import { Contacts, Staff } from './api/client';
 import { socket } from './api/socket';
 import {
   ensurePermission,
@@ -18,7 +18,7 @@ import {
 
 const SELECTED_CONTACT_KEY = 'wati:selectedContactId';
 const DETAILS_OPEN_KEY = 'wati:detailsPanelOpen';
-const TOKEN_KEY = 'vanigan:adminToken';
+const TOKEN_KEY = 'vanigan:staffToken';
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
@@ -43,7 +43,7 @@ export default function App() {
   useEffect(() => {
     if (!token) { setVerifying(false); return; }
     let cancelled = false;
-    Admin.me()
+    Staff.me()
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
         if (!cancelled) setToken(null);

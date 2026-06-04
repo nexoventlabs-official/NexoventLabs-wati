@@ -2,9 +2,8 @@ const Contact = require('../models/Contact');
 const Message = require('../models/Message');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
-const crypto = require('crypto');
-const Setting = require('../models/Setting');
 const { signAdminToken } = require('../middleware/adminAuth');
+const { getStaffCredentialsDoc, setStaffCredentials } = require('../services/staffCredentials');
 
 // ---- Helpers ---------------------------------------------------------------
 
@@ -20,23 +19,6 @@ function fmt(d) {
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
   return `${pad(dt.getDate())} ${months[dt.getMonth()]} ${dt.getFullYear()} ${h}:${pad(dt.getMinutes())} ${ampm}`;
-}
-
-const STAFF_KEY = 'staffCredentials';
-const HASH_ITERS = 120000;
-const HASH_BYTES = 32;
-const HASH_DIGEST = 'sha256';
-
-function hashPassword(password, salt) {
-  return crypto.pbkdf2Sync(password, salt, HASH_ITERS, HASH_BYTES, HASH_DIGEST).toString('hex');
-}
-
-function normalizeMobile(value) {
-  return String(value || '').trim();
-}
-
-async function getStaffCredentialsDoc() {
-  return Setting.findOne({ key: STAFF_KEY }).lean();
 }
 
 // Map a callStatus enum value to a user-facing label (mirrors the frontend).
@@ -136,39 +118,17 @@ exports.login = (req, res) => {
   const { username, password } = req.body || {};
   const expectedUser = process.env.ADMIN_USER || 'admin';
   const expectedPass = process.env.ADMIN_PASS || 'admin';
-  if (typeof username !== 'string' || typeof password !== 'string') {
+  const normalizedUser = typeof username === 'string' ? username.trim() : '';
+  const normalizedPass = typeof password === 'string' ? password.trim() : '';
+
+  if (normalizedUser !== expectedUser || normalizedPass !== expectedPass) {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  const normalizedUser = username.trim();
-  const normalizedPass = password.trim();
-
-  return getStaffCredentialsDoc()
-    .then((doc) => {
-      const staff = doc?.value || null;
-      const staffMobile = normalizeMobile(staff?.mobile);
-      const staffHash = staff?.passwordHash;
-      const staffSalt = staff?.salt;
-      const staffOk =
-        staffMobile &&
-        staffHash &&
-        staffSalt &&
-        normalizedUser === staffMobile &&
-        hashPassword(normalizedPass, staffSalt) === staffHash;
-
-      const adminOk =
-        normalizedUser === expectedUser &&
-        normalizedPass === expectedPass;
-
-      if (!staffOk && !adminOk) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-      return res.json({
-        token: signAdminToken(normalizedUser),
-        user: { username: normalizedUser, role: 'admin' },
-      });
-    })
-    .catch(() => res.status(500).json({ error: 'Login failed' }));
+  return res.json({
+    token: signAdminToken(normalizedUser),
+    user: { username: normalizedUser, role: 'admin' },
+  });
 };
 
 // GET /api/admin/me   -> { ok: true, user }
@@ -189,23 +149,11 @@ exports.getStaffCredentials = async (req, res) => {
 
 // PUT /api/admin/staff-credentials -> { mobile, hasPassword, updatedAt }
 exports.updateStaffCredentials = async (req, res) => {
-  const { mobile, password } = req.body || {};
-  const trimmedMobile = normalizeMobile(mobile);
-  const trimmedPassword = String(password || '').trim();
-
-  if (!trimmedMobile || !trimmedPassword) {
-    return res.status(400).json({ error: 'Mobile number and password are required' });
+  const result = await setStaffCredentials(req.body || {});
+  if (result.error) {
+    return res.status(400).json({ error: result.error });
   }
-
-  const salt = crypto.randomBytes(16).toString('hex');
-  const passwordHash = hashPassword(trimmedPassword, salt);
-  await Setting.put(STAFF_KEY, { mobile: trimmedMobile, passwordHash, salt });
-  const doc = await getStaffCredentialsDoc();
-  res.json({
-    mobile: trimmedMobile,
-    hasPassword: true,
-    updatedAt: doc?.updatedAt || null,
-  });
+  res.json(result);
 };
 
 // GET /api/admin/contacts   -> full contact records with histories

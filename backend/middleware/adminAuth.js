@@ -17,6 +17,15 @@ function signAdminToken(username) {
   );
 }
 
+// Sign a JWT for staff logins.
+function signStaffToken(mobile) {
+  return jwt.sign(
+    { sub: mobile, role: 'staff' },
+    getSecret(),
+    { expiresIn: '12h' }
+  );
+}
+
 // Express middleware. Rejects with 401 if the request does not present a
 // valid `Authorization: Bearer <jwt>` header signed with our secret AND
 // carrying `role: 'admin'`.
@@ -36,4 +45,21 @@ function requireAdmin(req, res, next) {
   }
 }
 
-module.exports = { signAdminToken, requireAdmin };
+// Express middleware for staff-only routes.
+function requireStaff(req, res, next) {
+  const header = req.headers.authorization || '';
+  const m = /^Bearer\s+(.+)$/i.exec(header.trim());
+  if (!m) return res.status(401).json({ error: 'No token' });
+  try {
+    const decoded = jwt.verify(m[1], getSecret());
+    if (decoded.role !== 'staff') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    req.staff = decoded;
+    return next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+}
+
+module.exports = { signAdminToken, signStaffToken, requireAdmin, requireStaff };

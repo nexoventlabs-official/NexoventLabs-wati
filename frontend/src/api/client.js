@@ -7,6 +7,13 @@ const api = axios.create({ baseURL: `${API_URL}/api`, timeout: 30000 });
 // Attach the admin JWT to /admin/* and /categories/* requests when present in
 // localStorage so the rest of the app's calls remain unauthenticated.
 api.interceptors.request.use((config) => {
+  if (config.url && config.url.startsWith('/staff/')) {
+    const token = localStorage.getItem('vanigan:staffToken');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
   if (config.url && (config.url.startsWith('/admin/') || config.url.startsWith('/categories') || config.url.startsWith('/flows') || config.url.startsWith('/flow-images') || config.url.startsWith('/welcome') || config.url.startsWith('/campaigns'))) {
     const token = localStorage.getItem('vanigan:adminToken');
     if (token) {
@@ -145,6 +152,12 @@ export const Admin = {
     const r = await api.get('/admin/report', { params, responseType: 'blob' });
     return r.data;
   },
+};
+
+export const Staff = {
+  login: (mobile, password) =>
+    api.post('/staff/login', { mobile, password }).then((r) => r.data),
+  me: () => api.get('/staff/me').then((r) => r.data),
 };
 
 export default api;

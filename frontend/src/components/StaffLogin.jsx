@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Lock, User, LogIn } from 'lucide-react';
-import { Admin } from '../api/client';
+import { Staff } from '../api/client';
 
 export default function StaffLogin({ onLoggedIn }) {
   const [mobile, setMobile] = useState('');
@@ -14,7 +14,7 @@ export default function StaffLogin({ onLoggedIn }) {
     setSubmitting(true);
     setError('');
     try {
-      const { token } = await Admin.login(mobile.trim(), password);
+      const { token } = await Staff.login(mobile.trim(), password);
       onLoggedIn(token);
     } catch (e) {
       const msg = e?.response?.data?.error || e.message || 'Login failed';
