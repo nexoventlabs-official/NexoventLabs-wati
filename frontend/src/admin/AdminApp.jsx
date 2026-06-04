@@ -9,6 +9,7 @@ import AdminFlowImages from './AdminFlowImages.jsx';
 import AdminWelcome from './AdminWelcome.jsx';
 import AdminCampaigns from './AdminCampaigns.jsx';
 import AdminFollowUp from './AdminFollowUp.jsx';
+import AdminStaff from './AdminStaff.jsx';
 
 const TOKEN_KEY = 'vanigan:adminToken';
 
@@ -102,6 +103,9 @@ export default function AdminApp() {
   }
   if (path.startsWith('/admin/followup')) {
     return <AdminFollowUp onNavigate={navigate} onLogout={handleLogout} />;
+  }
+  if (path.startsWith('/admin/staff')) {
+    return <AdminStaff onNavigate={navigate} onLogout={handleLogout} />;
   }
   // Default authed route
   return <AdminDashboard onNavigate={navigate} onLogout={handleLogout} />;

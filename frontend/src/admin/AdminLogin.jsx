@@ -42,7 +42,7 @@ export default function AdminLogin({ onLoggedIn }) {
 
         <form onSubmit={submit} className="space-y-4">
           <label className="block">
-            <span className="text-[12px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5 block">Username</span>
+            <span className="text-[12px] uppercase tracking-wider text-slate-500 font-semibold mb-1.5 block">Mobile number</span>
             <div className="relative group">
               <User
                 size={18}
@@ -53,7 +53,7 @@ export default function AdminLogin({ onLoggedIn }) {
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
                 className="w-full pl-10 pr-4 py-2.5 bg-white/50 border border-slate-200 rounded-xl text-sm outline-none focus:border-admin-accent focus:ring-4 focus:ring-admin-accent/10 transition-all shadow-sm"
-                placeholder="admin"
+                placeholder="e.g. 15551234567"
               />
             </div>
           </label>

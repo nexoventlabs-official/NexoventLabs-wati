@@ -125,6 +125,8 @@ export const Admin = {
   login: (username, password) =>
     api.post('/admin/login', { username, password }).then((r) => r.data),
   me: () => api.get('/admin/me').then((r) => r.data),
+  getStaffCredentials: () => api.get('/admin/staff-credentials').then((r) => r.data),
+  updateStaffCredentials: (body) => api.put('/admin/staff-credentials', body).then((r) => r.data),
   listContacts: (params) =>
     api.get('/admin/contacts', { params }).then((r) => r.data),
   getContact: (id) =>
