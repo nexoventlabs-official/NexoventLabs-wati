@@ -7,7 +7,7 @@ const HASH_BYTES = 32;
 const HASH_DIGEST = 'sha256';
 
 function normalizeMobile(value) {
-  return String(value || '').trim();
+  return String(value || '').replace(/\D/g, '');
 }
 
 function hashPassword(password, salt) {
