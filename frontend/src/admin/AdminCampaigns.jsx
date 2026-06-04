@@ -276,15 +276,54 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
 }
 
 function AddModal({ onClose, onAdded, onError }) {
-  const [numbers, setNumbers] = useState('');
+  const [numberInput, setNumberInput] = useState('');
+  const [queuedNumbers, setQueuedNumbers] = useState([]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
+  const [inlineError, setInlineError] = useState('');
+  const countryCode = '91';
+
+  function normalizeNumber(value) {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  function addNumber() {
+    const digits = normalizeNumber(numberInput);
+    const normalized = digits.startsWith(countryCode) ? digits : `${countryCode}${digits}`;
+
+    if (!digits || digits === countryCode) {
+      setInlineError('Enter a valid mobile number.');
+      return;
+    }
+    if (queuedNumbers.includes(normalized)) {
+      setInlineError('This number is already in the list.');
+      return;
+    }
+    setQueuedNumbers((prev) => [...prev, normalized]);
+    setNumberInput('');
+    setInlineError('');
+  }
+
+  function removeNumber(value) {
+    setQueuedNumbers((prev) => prev.filter((n) => n !== value));
+  }
+
+  function collectNumbers() {
+    const list = queuedNumbers.slice();
+    const digits = normalizeNumber(numberInput);
+    if (digits && digits !== countryCode) {
+      const normalized = digits.startsWith(countryCode) ? digits : `${countryCode}${digits}`;
+      if (!list.includes(normalized)) list.push(normalized);
+    }
+    return list;
+  }
 
   async function save() {
-    if (!numbers.trim()) { onError('Enter at least one number.'); return; }
+    const list = collectNumbers();
+    if (!list.length) { onError('Enter at least one number.'); return; }
     setBusy(true);
     try {
-      const r = await Campaigns.add({ numbers, name });
+      const r = await Campaigns.add({ numbers: list.join('\n'), name });
       onAdded(r);
     } catch (e) {
       onError(e?.response?.data?.error || e.message);
@@ -306,14 +345,48 @@ function AddModal({ onClose, onAdded, onError }) {
             <input className="adm-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Applies to all added in this batch" />
           </div>
           <div>
-            <div className="text-[12px] uppercase tracking-wider font-semibold text-slate-500 mb-1.5">WhatsApp numbers</div>
-            <textarea
-              className="adm-input resize-none" rows={6}
-              value={numbers}
-              onChange={(e) => setNumbers(e.target.value)}
-              placeholder={'One per line (or comma-separated), with country code:\n919876543210\n918123456789'}
-            />
-            <p className="text-[12px] text-slate-400 mt-1">Include the country code. Duplicates already in the list are skipped.</p>
+            <div className="text-[12px] uppercase tracking-wider font-semibold text-slate-500 mb-1.5">WhatsApp number</div>
+            <div className="flex items-center gap-2">
+              <div className="px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-600 text-sm font-semibold">
+                +{countryCode}
+              </div>
+              <input
+                className="adm-input flex-1"
+                value={numberInput}
+                onChange={(e) => setNumberInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addNumber();
+                  }
+                }}
+                inputMode="numeric"
+                placeholder="Mobile number"
+              />
+              <button
+                onClick={addNumber}
+                className="p-2.5 rounded-xl bg-admin-accent text-white shadow-sm hover:shadow-md"
+                title="Add number"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+            {inlineError && (
+              <div className="text-[12px] text-rose-600 mt-2">{inlineError}</div>
+            )}
+            {queuedNumbers.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {queuedNumbers.map((n) => (
+                  <div key={n} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 text-slate-700 text-xs font-medium">
+                    +{n}
+                    <button onClick={() => removeNumber(n)} className="text-slate-400 hover:text-slate-600">
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[12px] text-slate-400 mt-2">Default country code is +{countryCode}. Click the + button to queue numbers.</p>
           </div>
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100">
