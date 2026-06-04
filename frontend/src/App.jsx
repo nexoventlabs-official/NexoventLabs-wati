@@ -3,7 +3,8 @@ import Sidebar from './components/Sidebar.jsx';
 import ChatPanel from './components/ChatPanel.jsx';
 import TemplatesDrawer from './components/TemplatesDrawer.jsx';
 import ContactDetailsPanel from './components/ContactDetailsPanel.jsx';
-import { Contacts } from './api/client';
+import StaffLogin from './components/StaffLogin.jsx';
+import { Contacts, Admin } from './api/client';
 import { socket } from './api/socket';
 import {
   ensurePermission,
@@ -17,8 +18,11 @@ import {
 
 const SELECTED_CONTACT_KEY = 'wati:selectedContactId';
 const DETAILS_OPEN_KEY = 'wati:detailsPanelOpen';
+const TOKEN_KEY = 'vanigan:adminToken';
 
 export default function App() {
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+  const [verifying, setVerifying] = useState(!!token);
   const [contacts, setContacts] = useState([]);
   const [loadingContacts, setLoadingContacts] = useState(true);
   // Restore previously opened chat across page refreshes.
@@ -35,6 +39,23 @@ export default function App() {
       return v === null ? true : v === '1';
     } catch { return true; }
   });
+
+  useEffect(() => {
+    if (!token) { setVerifying(false); return; }
+    let cancelled = false;
+    Admin.me()
+      .catch(() => {
+        localStorage.removeItem(TOKEN_KEY);
+        if (!cancelled) setToken(null);
+      })
+      .finally(() => { if (!cancelled) setVerifying(false); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleLogin = useCallback((newToken) => {
+    localStorage.setItem(TOKEN_KEY, newToken);
+    setToken(newToken);
+  }, []);
 
   // Persist selected chat id on every change.
   useEffect(() => {
@@ -168,6 +189,18 @@ export default function App() {
   }, [notifyEnabled, notifPerm]);
 
   const selected = contacts.find(c => c._id === selectedId);
+
+  if (verifying) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-slate-50 text-gray-500">
+        Loading panel…
+      </div>
+    );
+  }
+
+  if (!token) {
+    return <StaffLogin onLoggedIn={handleLogin} />;
+  }
 
   return (
     <div className="h-screen w-screen flex overflow-hidden bg-wati-panel">
