@@ -491,8 +491,13 @@ function AddModal({ onClose, onAdded, onError }) {
   const [inlineError, setInlineError] = useState('');
   const countryCode = '91';
 
+  // Strip everything except digits, then remove all leading zeros.
+  function sanitizeInput(value) {
+    return String(value || '').replace(/\D/g, '').replace(/^0+/, '');
+  }
+
   function normalizeNumber(value) {
-    return String(value || '').replace(/\D/g, '');
+    return sanitizeInput(value);
   }
 
   function addNumber() {
@@ -561,7 +566,7 @@ function AddModal({ onClose, onAdded, onError }) {
               <input
                 className="adm-input flex-1"
                 value={numberInput}
-                onChange={(e) => setNumberInput(e.target.value)}
+                onChange={(e) => setNumberInput(sanitizeInput(e.target.value))}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
