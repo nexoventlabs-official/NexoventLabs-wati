@@ -5,7 +5,7 @@ const FRIENDLY = {
   131026: { title: 'Recipient not reachable', detail: 'The number is not on WhatsApp or has blocked your business.' },
   131047: { title: '24-hour window closed', detail: 'You can only send approved templates outside the 24-hour customer service window.' },
   131048: { title: 'Spam rate limit', detail: 'Too many template sends - throttled by Meta. Try again later.' },
-  131049: { title: 'User experience rate limit', detail: 'Meta limited delivery to protect user experience. Try later.' },
+  131049: { title: 'User experience rate limit', detail: 'Meta\'s per-user marketing frequency cap — the recipient has received too many marketing messages from businesses today. This is NOT a permanent failure. The system will auto-retry after 24 hours once Meta resets the per-user counter.' },
   131051: { title: 'Unsupported message type', detail: 'This message type is not supported for the recipient.' },
   131052: { title: 'Media download error', detail: 'Meta could not download the media from your URL. Re-upload the file.' },
   131053: { title: 'Media upload error', detail: 'Meta could not fetch the media URL (often 403/404 from origin).' },

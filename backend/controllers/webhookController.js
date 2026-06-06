@@ -86,9 +86,21 @@ async function handleMessagesEvent(value) {
         if (cc) {
           if (s.status === 'failed' && s.errors) {
             const code = s.errors[0]?.code;
-            const notWa = code === 131026 || code === 131056 || /not.*whatsapp|invalid.*recipient/i.test(s.errors[0]?.message || s.errors[0]?.title || '');
-            cc.lastStatus = notWa ? 'not_whatsapp' : 'failed';
-            cc.lastError = metaErrors.summarize(s.errors);
+            const errMsg = s.errors[0]?.message || s.errors[0]?.title || '';
+            const notWa = code === 131026 || code === 131056
+              || /not.*whatsapp|invalid.*recipient|recipient.*not.*reachable|blocked/i.test(errMsg);
+            // 131049 = per-user marketing cap — not permanent, auto-retry after 24h
+            if (code === 131049) {
+              cc.lastStatus = 'rate_limited';
+              cc.lastError = 'Meta per-user marketing limit — auto-retry in 24 hours.';
+              cc.retryAfter = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            } else if (notWa) {
+              cc.lastStatus = 'not_whatsapp';
+              cc.lastError = metaErrors.summarize(s.errors)?.detail || errMsg;
+            } else {
+              cc.lastStatus = 'failed';
+              cc.lastError = metaErrors.summarize(s.errors)?.detail || errMsg;
+            }
           } else if (['sent', 'delivered', 'read'].includes(s.status)) {
             cc.lastStatus = s.status;
             cc.lastError = '';

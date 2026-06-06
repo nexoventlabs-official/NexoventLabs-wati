@@ -1,7 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Plus, Trash2, X, Send, RefreshCw, Megaphone, CheckCircle2, Clock, XCircle,
-  AlertTriangle, Phone, CalendarClock, CalendarCheck, BanIcon,
+  AlertTriangle, Phone, CalendarClock, CalendarCheck, BanIcon, Users,
+  BarChart2, WifiOff,
 } from 'lucide-react';
 import AdminShell from './AdminShell.jsx';
 import { Campaigns } from '../api/client';
@@ -13,7 +14,8 @@ const STATUS = {
   sent:         { label: 'Sent',             icon: <CheckCircle2 size={13} />,  cls: 'bg-blue-100 text-blue-700 border-blue-200' },
   delivered:    { label: 'Delivered',        icon: <CheckCircle2 size={13} />,  cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
   read:         { label: 'Read',             icon: <CheckCircle2 size={13} />,  cls: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-  not_whatsapp: { label: 'Not on WhatsApp',  icon: <AlertTriangle size={13} />, cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  not_whatsapp: { label: 'No WhatsApp',      icon: <WifiOff size={13} />,       cls: 'bg-amber-100 text-amber-700 border-amber-200' },
+  rate_limited: { label: 'Auto-retry',       icon: <RefreshCw size={13} />,     cls: 'bg-orange-100 text-orange-700 border-orange-200' },
   failed:       { label: 'Failed',           icon: <XCircle size={13} />,       cls: 'bg-rose-100 text-rose-700 border-rose-200' },
 };
 
@@ -125,7 +127,11 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
     try {
       if (mode === 'now') {
         const r = await Campaigns.send(ids);
-        showToast('success', `Done. Sent ${r.sent}/${r.total}${r.failed ? `, ${r.failed} failed` : ''}.`);
+        const parts = [`Sent ${r.sent}/${r.total}`];
+        if (r.failed)      parts.push(`${r.failed} failed`);
+        if (r.rateLimited) parts.push(`${r.rateLimited} queued for auto-retry (Meta marketing cap)`);
+        if (r.skipped)     parts.push(`${r.skipped} skipped (already sent recently)`);
+        showToast('success', parts.join(', ') + '.');
       } else {
         const r = await Campaigns.schedule(ids, scheduledAt);
         const dt = new Date(scheduledAt).toLocaleString();
@@ -134,17 +140,28 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
       setSelected(new Set());
       load();
     } catch (e) {
-      showToast('error', e?.response?.data?.error || e.message);
+      const msg = e?.response?.data?.error || e.message;
+      showToast('error', msg);
     } finally {
       setSending(false);
-    }
-  }
-
-  const allChecked = items.length > 0 && selected.size === items.length;
+    } = items.length > 0 && selected.size === items.length;
   const anyScheduled = [...selected].some((id) => {
     const item = items.find((x) => x._id === id);
     return item?.lastStatus === 'scheduled';
   });
+
+  // Compute status stats for the summary bar
+  const stats = useMemo(() => {
+    const counts = {
+      total: items.length,
+      queued: 0, scheduled: 0, sent: 0, delivered: 0, read: 0,
+      not_whatsapp: 0, rate_limited: 0, failed: 0,
+    };
+    for (const item of items) counts[item.lastStatus] = (counts[item.lastStatus] || 0) + 1;
+    counts.success = counts.sent + counts.delivered + counts.read;
+    counts.issues  = counts.not_whatsapp + counts.failed;
+    return counts;
+  }, [items]);
 
   return (
     <AdminShell active="campaigns" onNavigate={onNavigate} onLogout={onLogout} title="Campaign">
@@ -171,10 +188,23 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
         </div>
       )}
 
+      {/* ── Stats bar ── */}
+      {items.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mb-5 animate-fade-in-up stagger-1">
+          <StatCard label="Total" value={stats.total}        icon={<Users size={16}/>}        color="slate" />
+          <StatCard label="Delivered" value={stats.success}  icon={<CheckCircle2 size={16}/>} color="emerald" />
+          <StatCard label="Sent"     value={stats.sent}      icon={<Send size={16}/>}          color="blue" />
+          <StatCard label="Queued"   value={stats.queued}    icon={<Clock size={16}/>}         color="slate" />
+          <StatCard label="Auto-retry" value={stats.rate_limited} icon={<RefreshCw size={16}/>} color="orange" />
+          <StatCard label="No WhatsApp" value={stats.not_whatsapp} icon={<WifiOff size={16}/>} color="amber" />
+          <StatCard label="Failed"   value={stats.failed}    icon={<XCircle size={16}/>}       color="rose" />
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm animate-fade-in-up stagger-2">
         <div className="flex flex-wrap items-center gap-3 p-4 border-b border-slate-100">
           <div className="text-[13px] text-slate-500 font-medium">
-            {items.length} contact{items.length === 1 ? '' : 's'} · {selected.size} selected
+            {items.length} contact{items.length === 1 ? '' : 's'}{selected.size > 0 ? ` · ${selected.size} selected` : ''}
           </div>
           <div className="flex items-center gap-2 ml-auto flex-wrap">
             <button
@@ -275,13 +305,30 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
                           {st.icon} {st.label}
                         </span>
                         {c.lastStatus === 'not_whatsapp' && (
-                          <div className="text-[11px] text-amber-600 mt-1">Skipped — not a WhatsApp number</div>
+                          <div className="text-[11px] text-amber-700 mt-1 flex items-center gap-1">
+                            <WifiOff size={11} />
+                            {c.lastError && /block/i.test(c.lastError)
+                              ? 'Number has blocked your business'
+                              : 'Not reachable on WhatsApp'}
+                          </div>
+                        )}
+                        {c.lastStatus === 'rate_limited' && (
+                          <div className="text-[11px] text-orange-600 mt-1">Meta marketing cap — auto-retrying</div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-slate-500 text-[13px]">
                         {c.lastStatus === 'scheduled' && c.scheduledAt
                           ? <span className="text-violet-600 font-medium flex items-center gap-1"><CalendarCheck size={13} />{new Date(c.scheduledAt).toLocaleString()}</span>
+                          : c.lastStatus === 'rate_limited' && c.retryAfter
+                          ? <span className="text-orange-600 font-medium flex items-center gap-1"><RefreshCw size={13} />Retry after {new Date(c.retryAfter).toLocaleString()}</span>
                           : c.lastSentAt ? new Date(c.lastSentAt).toLocaleString() : '—'}
+                        {/* Warn if re-sending within 23h is blocked */}
+                        {['sent', 'delivered', 'read'].includes(c.lastStatus) && c.lastSentAt &&
+                          (Date.now() - new Date(c.lastSentAt).getTime() < 23 * 60 * 60 * 1000) && (
+                          <div className="text-[11px] text-amber-600 mt-0.5 flex items-center gap-1">
+                            <AlertTriangle size={11} /> Re-send blocked for 23h
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <button onClick={() => del(c)} className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg">
@@ -312,6 +359,8 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
       {showSendModal && (
         <SendOrScheduleModal
           count={selected.size}
+          selectedIds={[...selected]}
+          items={items}
           onClose={() => setShowSendModal(false)}
           onConfirm={handleSendOrSchedule}
         />
@@ -328,11 +377,47 @@ export default function AdminCampaigns({ onNavigate, onLogout }) {
 }
 
 /* ─────────────────────────────────────────────────────────
+   Stat card
+   ───────────────────────────────────────────────────────── */
+const STAT_COLORS = {
+  slate:   { bg: 'bg-slate-50',   border: 'border-slate-200', text: 'text-slate-700',  val: 'text-slate-800'  },
+  emerald: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', val: 'text-emerald-800' },
+  blue:    { bg: 'bg-blue-50',    border: 'border-blue-200',   text: 'text-blue-700',   val: 'text-blue-800'   },
+  orange:  { bg: 'bg-orange-50',  border: 'border-orange-200', text: 'text-orange-700', val: 'text-orange-800' },
+  amber:   { bg: 'bg-amber-50',   border: 'border-amber-200',  text: 'text-amber-700',  val: 'text-amber-800'  },
+  rose:    { bg: 'bg-rose-50',    border: 'border-rose-200',   text: 'text-rose-700',   val: 'text-rose-800'   },
+};
+
+function StatCard({ label, value, icon, color = 'slate' }) {
+  const c = STAT_COLORS[color] || STAT_COLORS.slate;
+  return (
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${c.bg} ${c.border}`}>
+      <div className={`shrink-0 ${c.text}`}>{icon}</div>
+      <div className="min-w-0">
+        <div className={`text-[20px] font-bold leading-none ${c.val}`}>{value}</div>
+        <div className={`text-[11px] font-medium mt-0.5 truncate ${c.text}`}>{label}</div>
+      </div>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────────
    Send-or-Schedule modal
    ───────────────────────────────────────────────────────── */
-function SendOrScheduleModal({ count, onClose, onConfirm }) {
+function SendOrScheduleModal({ count, selectedIds, items, onClose, onConfirm }) {
   const [mode, setMode] = useState('now'); // 'now' | 'schedule'
 
+  // Compute how many selected contacts will be skipped (already sent within 23h)
+  const GUARD_MS = 23 * 60 * 60 * 1000;
+  const now = Date.now();
+  const skippableCount = (selectedIds || []).filter((id) => {
+    const item = (items || []).find((x) => x._id === id);
+    if (!item) return false;
+    if (!['sent', 'delivered', 'read'].includes(item.lastStatus)) return false;
+    if (!item.lastSentAt) return false;
+    return now - new Date(item.lastSentAt).getTime() < GUARD_MS;
+  }).length;
+  const willSend = count - skippableCount;
   // Build min datetime: 1 minute from now, rounded up to the next minute.
   function getMinDateTime() {
     const d = new Date(Date.now() + 60 * 1000);
@@ -392,6 +477,19 @@ function SendOrScheduleModal({ count, onClose, onConfirm }) {
           <p className="text-[14px] text-slate-600">
             You're about to send the welcome template to <span className="font-semibold text-slate-800">{count} contact{count !== 1 ? 's' : ''}</span>. Choose when to send it.
           </p>
+
+          {/* Warn about contacts that will be skipped due to 23h guard */}
+          {skippableCount > 0 && (
+            <div className="flex items-start gap-2.5 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-[13px] text-amber-800">
+              <AlertTriangle size={15} className="shrink-0 mt-0.5" />
+              <span>
+                <span className="font-semibold">{skippableCount} contact{skippableCount !== 1 ? 's' : ''}</span> were already sent to within the last 23 hours and will be skipped to prevent duplicate messages.{' '}
+                {willSend > 0
+                  ? <span className="font-semibold">{willSend} will be sent.</span>
+                  : <span className="font-semibold text-red-700">No new sends will occur.</span>}
+              </span>
+            </div>
+          )}
 
           {/* Mode cards */}
           <div className="grid grid-cols-2 gap-3">

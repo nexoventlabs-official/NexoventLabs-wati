@@ -19,7 +19,7 @@ const CampaignContactSchema = new mongoose.Schema(
     //   failed    - other failure
     lastStatus: {
       type: String,
-      enum: ['queued', 'sent', 'delivered', 'read', 'not_whatsapp', 'failed', 'scheduled'],
+      enum: ['queued', 'sent', 'delivered', 'read', 'not_whatsapp', 'failed', 'scheduled', 'rate_limited'],
       default: 'queued',
     },
     lastError: { type: String, default: '' },
@@ -31,6 +31,9 @@ const CampaignContactSchema = new mongoose.Schema(
     // will fire the send at this UTC time.
     scheduledAt: { type: Date, default: null, index: true },
     scheduledIds: { type: [String], default: [] }, // campaign contact ids batched in this schedule
+
+    // Rate-limited contacts: scheduler will auto-retry once this time passes.
+    retryAfter: { type: Date, default: null, index: true },
   },
   { timestamps: true }
 );

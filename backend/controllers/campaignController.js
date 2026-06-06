@@ -13,6 +13,11 @@ function normWa(v) {
   return String(v || '').replace(/\D/g, '');
 }
 
+// Pause execution for `ms` milliseconds — used for rate-limit spacing.
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 exports.list = async (_req, res) => {
   const items = await CampaignContact.find().sort({ createdAt: -1 }).lean();
   res.json(items);
@@ -98,8 +103,7 @@ exports.removeMany = async (req, res) => {
 // Body: { ids: [campaignContactId, ...] }  (omit/empty = all)
 exports.send = async (req, res) => {
   try {
-    // Pull the live status from Meta first - our locally cached status may lag
-    // behind (webhook missed / not refreshed) even though Meta has approved it.
+    // Pull the live status from Meta first.
     let status;
     try {
       ({ status } = await welcomeTemplate.refresh());
@@ -112,76 +116,157 @@ exports.send = async (req, res) => {
       });
     }
 
-    const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
-    const filter = ids && ids.length ? { _id: { $in: ids } } : {};
-    const targets = await CampaignContact.find(filter);
-    if (!targets.length) return res.status(400).json({ error: 'No contacts selected.' });
-
-    // Delegate to the shared executor (also used by the scheduler).
-    let sent = 0, failed = 0;
-    const total = targets.length;
-
-    // Patch executeSend to count results by wrapping listeners via socket would
-    // be complex; instead keep a lightweight inline count here.
-    const tplName = await welcomeTemplate.getTemplateName();
-    const welcome = await welcomeService.getWelcome();
-
-    for (const t of targets) {
-      try {
-        const resp = await welcomeTemplate.sendToContact(t.waId);
-        const wamid = resp?.messages?.[0]?.id || '';
-
-        t.lastStatus = 'sent';
-        t.lastError = '';
-        t.lastWamid = wamid;
-        t.lastSentAt = new Date();
-        t.scheduledAt = null;
-        t.sendCount = (t.sendCount || 0) + 1;
-        await t.save();
-        emit('campaign:update', t);
-        sent += 1;
-
-        let contact = await Contact.findOne({ waId: t.waId });
-        if (!contact) contact = await Contact.create({ waId: t.waId, name: t.name || '' });
-        const seq = await redis.nextSeq();
-        const msg = await Message.create({
-          contact: contact._id,
-          waId: t.waId,
-          direction: 'outbound',
-          wamid,
-          type: 'template',
-          templateName: tplName,
-          templateData: {
-            header: welcome.headerImage ? { type: 'IMAGE', mediaUrl: welcome.headerImage } : { type: 'NONE' },
-            body: welcome.body,
-            footer: welcome.footer,
-            buttons: [{ type: 'QUICK_REPLY', text: welcome.cta || 'View Services' }],
-          },
-          text: `[welcome template] ${tplName}`,
-          status: 'sent',
-          seq,
-        });
-        contact.lastMessageAt = new Date();
-        contact.lastMessagePreview = '[campaign] welcome';
-        await contact.save();
-        emit('message:new', msg);
-        emit('contact:upsert', contact);
-      } catch (e) {
-        const err = e.response?.data?.error;
-        const code = err?.code;
-        const notWa = code === 131026 || code === 131056 || /not.*whatsapp|invalid.*recipient/i.test(err?.message || '');
-        t.lastStatus = notWa ? 'not_whatsapp' : 'failed';
-        t.lastError = err?.error_user_msg || err?.message || e.message;
-        t.lastSentAt = new Date();
-        t.scheduledAt = null;
-        await t.save();
-        emit('campaign:update', t);
-        failed += 1;
-        console.warn(`[campaign.send] ${t.waId} -> ${t.lastStatus}: ${t.lastError}`);
-      }
+    // ── Campaign lock: prevent two simultaneous sends ──────────────────────
+    const lockAcquired = await redis.acquireCampaignLock();
+    if (!lockAcquired) {
+      return res.status(429).json({
+        error: 'A campaign send is already in progress. Please wait for it to finish before starting another.',
+      });
     }
 
-    res.json({ ok: true, sent, failed, total });
+    try {
+      const ids = Array.isArray(req.body?.ids) ? req.body.ids : null;
+      const filter = ids && ids.length ? { _id: { $in: ids } } : {};
+      const targets = await CampaignContact.find(filter);
+      if (!targets.length) return res.status(400).json({ error: 'No contacts selected.' });
+
+      // Guard: skip contacts already sent/delivered/read within 23h, or
+      // rate_limited contacts still within their retryAfter window.
+      const RESEND_GUARD_MS = 23 * 60 * 60 * 1000;
+      const now = Date.now();
+
+      const eligibleTargets = targets.filter((t) => {
+        if (['sent', 'delivered', 'read'].includes(t.lastStatus)) {
+          if (!t.lastSentAt) return true;
+          return now - new Date(t.lastSentAt).getTime() > RESEND_GUARD_MS;
+        }
+        if (t.lastStatus === 'rate_limited') {
+          // Still within retryAfter window → skip (scheduler will handle it)
+          if (t.retryAfter && new Date(t.retryAfter).getTime() > now) return false;
+          return true;
+        }
+        return true;
+      });
+
+      const skipped = targets.length - eligibleTargets.length;
+      if (!eligibleTargets.length) {
+        return res.status(400).json({
+          error: `All selected contacts were either sent to recently or are waiting for Meta's rate-limit window to reset.`,
+        });
+      }
+
+      const tplName = await welcomeTemplate.getTemplateName();
+      const welcome = await welcomeService.getWelcome();
+
+      let sent = 0, failed = 0, rateLimited = 0;
+      const total = eligibleTargets.length;
+
+      for (const t of eligibleTargets) {
+        // ── Token bucket: wait for a send slot before calling Meta ──────────
+        await redis.consumeCampaignToken();
+
+        try {
+          const resp = await welcomeTemplate.sendToContact(t.waId);
+          const wamid = resp?.messages?.[0]?.id || '';
+
+          t.lastStatus = 'sent';
+          t.lastError = '';
+          t.lastWamid = wamid;
+          t.lastSentAt = new Date();
+          t.scheduledAt = null;
+          t.retryAfter = null;
+          t.sendCount = (t.sendCount || 0) + 1;
+          await t.save();
+          emit('campaign:update', t);
+          sent += 1;
+
+          let contact = await Contact.findOne({ waId: t.waId });
+          if (!contact) contact = await Contact.create({ waId: t.waId, name: t.name || '' });
+
+          // ── Redis dedup: fast check before touching MongoDB ────────────────
+          const alreadySent = await redis.isCampaignSentDuplicate(wamid);
+          if (!alreadySent) {
+            // Secondary safety net: MongoDB check
+            const existingMsg = wamid ? await Message.findOne({ wamid }).lean() : null;
+            if (!existingMsg) {
+              const seq = await redis.nextSeq();
+              await Message.create({
+                contact: contact._id,
+                waId: t.waId,
+                direction: 'outbound',
+                wamid,
+                type: 'template',
+                templateName: tplName,
+                templateData: {
+                  header: welcome.headerImage ? { type: 'IMAGE', mediaUrl: welcome.headerImage } : { type: 'NONE' },
+                  body: welcome.body,
+                  footer: welcome.footer,
+                  buttons: [{ type: 'QUICK_REPLY', text: welcome.cta || 'View Services' }],
+                },
+                text: `[welcome template] ${tplName}`,
+                status: 'sent',
+                seq,
+              });
+              contact.lastMessageAt = new Date();
+              contact.lastMessagePreview = '[campaign] welcome';
+              await contact.save();
+            }
+            // Mark wamid as sent in Redis (25h TTL)
+            await redis.markCampaignSent(wamid);
+            emit('message:new', await Message.findOne({ wamid }).lean());
+            emit('contact:upsert', contact);
+          }
+        } catch (e) {
+          const err = e.response?.data?.error;
+          const code = err?.code;
+
+          // 130429 = account-level rate limit → back off 60s, retry in 1h
+          if (code === 130429) {
+            console.warn(`[campaign.send] Account rate limit (130429) at ${t.waId}. Backing off 60s…`);
+            t.lastStatus = 'rate_limited';
+            t.lastError = 'Account rate limit — auto-retry in 1 hour.';
+            t.lastSentAt = new Date();
+            t.retryAfter = new Date(Date.now() + 60 * 60 * 1000);
+            await t.save();
+            emit('campaign:update', t);
+            rateLimited += 1;
+            // Drain the token bucket so subsequent sends pace correctly
+            await sleep(60000);
+            continue;
+          }
+
+          // 131049 = per-user marketing cap → retry after 24h
+          if (code === 131049) {
+            console.warn(`[campaign.send] Per-user cap (131049) for ${t.waId}. Auto-retry in 24h.`);
+            t.lastStatus = 'rate_limited';
+            t.lastError = 'Meta per-user marketing limit — auto-retry in 24 hours.';
+            t.lastSentAt = new Date();
+            t.retryAfter = new Date(Date.now() + 24 * 60 * 60 * 1000);
+            await t.save();
+            emit('campaign:update', t);
+            rateLimited += 1;
+            continue;
+          }
+
+          const notWa = code === 131026 || code === 131056
+            || /not.*whatsapp|invalid.*recipient|recipient.*not.*reachable|blocked/i.test(err?.message || '');
+          t.lastStatus = notWa ? 'not_whatsapp' : 'failed';
+          t.lastError = err?.error_user_msg || err?.message || e.message;
+          t.lastSentAt = new Date();
+          t.scheduledAt = null;
+          t.retryAfter = null;
+          await t.save();
+          emit('campaign:update', t);
+          failed += 1;
+          console.warn(`[campaign.send] ${t.waId} -> ${t.lastStatus}: ${t.lastError}`);
+        }
+      }
+
+      res.json({ ok: true, sent, failed, rateLimited, skipped, total });
+    } finally {
+      // Always release the lock, even if send threw
+      await redis.releaseCampaignLock();
+    }
   } catch (e) {
     console.error('[campaign.send]', e.response?.data?.error || e.message);
     res.status(500).json({ error: 'Failed', details: e.response?.data?.error?.message || e.message });
