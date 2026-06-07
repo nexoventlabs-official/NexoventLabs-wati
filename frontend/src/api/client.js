@@ -52,9 +52,9 @@ export const Templates = {
   create: (body) => api.post('/templates', body).then((r) => r.data),
   submit: (id) => api.post(`/templates/${id}/submit`).then((r) => r.data),
   refresh: (id) => api.post(`/templates/${id}/refresh`).then((r) => r.data),
-  // Update only the per-button auto-reply texts. Local-only - does not touch Meta.
-  // body: { replies: { "<button text>": "<reply text>", ... } }
-  updateReplies: (id, replies) => api.patch(`/templates/${id}/replies`, { replies }).then((r) => r.data),
+  // Update per-button auto-reply texts and/or demo URLs. Local-only - does not touch Meta.
+  // body: { replies: { "<button text>": "<reply text>", ... }, demoUrls: { "<button text>": "<url>", ... } }
+  updateReplies: (id, body) => api.patch(`/templates/${id}/replies`, body).then((r) => r.data),
   delete: (id) => api.delete(`/templates/${id}`).then((r) => r.data),
 };
 

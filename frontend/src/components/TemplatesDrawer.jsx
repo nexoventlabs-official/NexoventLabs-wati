@@ -420,6 +420,7 @@ export default function TemplatesDrawer({ onClose, onPick }) {
                         setBusyId(t._id);
                         try {
                           await Templates.updateReplies(t._id, {
+                            replies: {},
                             demoUrls: { Interested: currentDemoUrl },
                           });
                           await load();
