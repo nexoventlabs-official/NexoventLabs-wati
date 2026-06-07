@@ -213,7 +213,13 @@ export default function App() {
         range={range}
         setRange={setRange}
         onOpenTemplates={() => setTemplatesOpen(true)}
-        onAddContact={load}
+        onAddContact={async (contact) => {
+          await load();
+          if (contact?._id) {
+            setSelectedId(contact._id);
+            setTemplatesOpen(true);
+          }
+        }}
         onContactsChanged={load}
         notifyEnabled={notifyEnabled && notifPerm === 'granted'}
         notifyPerm={notifPerm}

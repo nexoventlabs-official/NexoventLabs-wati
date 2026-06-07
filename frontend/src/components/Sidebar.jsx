@@ -34,11 +34,11 @@ export default function Sidebar({
   async function handleAdd(e) {
     e.preventDefault();
     if (!newNum.replace(/\D/g, '')) return;
-    await Contacts.create({ waId: newNum.replace(/\D/g, ''), name: newName });
+    const contact = await Contacts.create({ waId: newNum.replace(/\D/g, ''), name: newName });
     setShowAdd(false);
     setNewNum('');
     setNewName('');
-    onAddContact && onAddContact();
+    onAddContact && onAddContact(contact);
   }
 
   async function handlePin(c) {
@@ -98,6 +98,19 @@ export default function Sidebar({
               {notifyEnabled ? <Bell size={20} /> : <BellOff size={20} />}
             </button>
           )}
+          <button
+            ref={addBtnRef}
+            onClick={() => setShowAdd(v => !v)}
+            title="Add new contact"
+            className={clsx(
+              'p-2 rounded-full transition-colors',
+              showAdd
+                ? 'bg-wati-primary text-white'
+                : 'text-wati-muted hover:bg-wati-panel hover:text-wati-text'
+            )}
+          >
+            <Plus size={20} />
+          </button>
         </div>
       </div>
 
