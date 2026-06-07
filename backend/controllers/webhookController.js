@@ -411,6 +411,34 @@ async function handleMessagesEvent(value) {
           if (isInterestedTap || isNotInterestedTap) {
             const interested = isInterestedTap;
             const contactId2 = contact._id;
+
+            // Look up per-template demo URL from the Interested button's demoUrl field.
+            let templateDemoUrl = null;
+            if (interested && base.replyToWamid) {
+              try {
+                const origMsg = await Message.findOne({
+                  wamid: base.replyToWamid,
+                }).lean();
+                if (origMsg?.templateName) {
+                  const TemplateModel = require("../models/Template");
+                  const tpl = await TemplateModel.findOne({
+                    name: origMsg.templateName,
+                  }).lean();
+                  const intBtn = (tpl?.buttons || []).find(
+                    (b) =>
+                      b.type === "QUICK_REPLY" &&
+                      b.text?.toLowerCase().trim() === "interested",
+                  );
+                  if (intBtn?.demoUrl) templateDemoUrl = intBtn.demoUrl;
+                }
+              } catch (e) {
+                console.warn(
+                  "[lead-response] demoUrl lookup failed:",
+                  e.message,
+                );
+              }
+            }
+
             (async () => {
               try {
                 const fresh = await Contact.findById(contactId2);
@@ -426,7 +454,11 @@ async function handleMessagesEvent(value) {
                 }
                 await fresh.save();
                 emit("contact:upsert", fresh);
-                await followUp.sendLeadReply(fresh, interested);
+                await followUp.sendLeadReply(
+                  fresh,
+                  interested,
+                  templateDemoUrl,
+                );
               } catch (e) {
                 console.error(
                   "[lead-response]",

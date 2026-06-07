@@ -329,19 +329,38 @@ export default function TemplateEditor({ onClose, onCreated }) {
                 </div>
                 {b.type === "QUICK_REPLY" && (
                   <div className="pl-2 border-l-2 border-wati-primary/30">
-                    <label className="text-[11px] text-wati-muted">
-                      Auto-reply when customer taps this button (optional)
-                    </label>
-                    <textarea
-                      value={b.replyText || ""}
-                      onChange={(e) =>
-                        updateButton(i, { replyText: e.target.value })
-                      }
-                      rows={2}
-                      maxLength={1000}
-                      placeholder={`e.g. Great! Our team will call you within 24h.`}
-                      className="w-full mt-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm resize-none outline-none placeholder-wati-muted"
-                    />
+                    {b.text?.toLowerCase().trim() === "interested" ? (
+                      <>
+                        <label className="text-[11px] text-wati-muted">
+                          Demo URL — sent as a CTA button when customer taps
+                          Interested
+                        </label>
+                        <input
+                          value={b.demoUrl || ""}
+                          onChange={(e) =>
+                            updateButton(i, { demoUrl: e.target.value })
+                          }
+                          placeholder="https://nexoventlabs.com/demo"
+                          className="w-full mt-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm outline-none placeholder-wati-muted"
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <label className="text-[11px] text-wati-muted">
+                          Auto-reply when customer taps this button (optional)
+                        </label>
+                        <textarea
+                          value={b.replyText || ""}
+                          onChange={(e) =>
+                            updateButton(i, { replyText: e.target.value })
+                          }
+                          rows={2}
+                          maxLength={1000}
+                          placeholder={`e.g. Great! Our team will call you within 24h.`}
+                          className="w-full mt-1 px-2 py-1.5 bg-wati-panel border border-wati-border text-wati-text rounded text-sm resize-none outline-none placeholder-wati-muted"
+                        />
+                      </>
+                    )}
                   </div>
                 )}
               </div>

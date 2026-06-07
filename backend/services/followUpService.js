@@ -142,7 +142,9 @@ async function sendFollowUpPrompt(contact) {
 // Send the branched reply after the customer taps Interested / Not Interested.
 // Interested path: image header + body + Demo CTA URL button.
 // Not Interested path: image header + body + Call CTA button.
-async function sendLeadReply(contact, interested) {
+// `demoUrlOverride` — per-template demo URL (from the Interested button's demoUrl
+// field). If provided it takes priority over the global admin config demoCTAUrl.
+async function sendLeadReply(contact, interested, demoUrlOverride = null) {
   const cfg = await getConfig();
   const body = interested ? cfg.interestedBody : cfg.notInterestedBody;
   const headerUrlRaw = interested
@@ -150,11 +152,12 @@ async function sendLeadReply(contact, interested) {
     : cfg.notInterestedHeader;
   const headerUrl = headerUrlRaw ? toJpgUrl(headerUrlRaw) : "";
 
-  // Interested → Demo URL CTA; Not Interested → Call CTA.
+  // Interested → Demo URL CTA (per-template URL takes priority over global config);
+  // Not Interested → Call CTA.
   let ctaUrl = "";
   let ctaText = "";
   if (interested) {
-    ctaUrl = (cfg.demoCTAUrl || "").trim();
+    ctaUrl = (demoUrlOverride || cfg.demoCTAUrl || "").trim();
     ctaText = (cfg.demoCTAText || "Book a Demo").slice(0, 20);
   } else {
     const callNumber = String(cfg.callNumber || "").replace(/[^\d+]/g, "");
