@@ -177,6 +177,21 @@ exports.createTemplate = async (req, res) => {
       });
     }
 
+    // Build the buttons array preserving local-only fields (replyText, demoUrl)
+    // that are not part of the Meta template spec but are used by the bot logic.
+    const savedButtons = (buttons || []).map((b) => {
+      if (b.type === "URL")
+        return { type: "URL", text: b.text, url: b.url };
+      if (b.type === "PHONE_NUMBER")
+        return { type: "PHONE_NUMBER", text: b.text, phone_number: b.phone_number };
+      return {
+        type: "QUICK_REPLY",
+        text: b.text,
+        replyText: b.replyText || "",
+        demoUrl: b.demoUrl || "",
+      };
+    });
+
     // Save DRAFT first
     let doc = await Template.create({
       name,
@@ -186,7 +201,7 @@ exports.createTemplate = async (req, res) => {
       header: header || { type: "NONE" },
       body,
       footer: footer || "",
-      buttons: buttons || [],
+      buttons: savedButtons,
       components,
     });
     emit("template:update", doc);
