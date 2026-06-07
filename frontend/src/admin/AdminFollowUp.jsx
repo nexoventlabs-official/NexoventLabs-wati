@@ -23,9 +23,9 @@ export default function AdminFollowUp({ onNavigate, onLogout }) {
     promptBody: "",
     interestedBody: "",
     notInterestedBody: "",
-    demoCTAUrl: '',
-    demoCTAText: 'Book a Demo',
-    notInterestedCtaText: 'Our Services',
+    demoCTAUrl: "",
+    demoCTAText: "Book a Demo",
+    notInterestedCtaText: "Our Services",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -46,9 +46,9 @@ export default function AdminFollowUp({ onNavigate, onLogout }) {
         promptBody: d.promptBody || "",
         interestedBody: d.interestedBody || "",
         notInterestedBody: d.notInterestedBody || "",
-        demoCTAUrl: d.demoCTAUrl || '',
-        demoCTAText: d.demoCTAText || 'Book a Demo',
-        notInterestedCtaText: d.notInterestedCtaText || 'Our Services',
+        demoCTAUrl: d.demoCTAUrl || "",
+        demoCTAText: d.demoCTAText || "Book a Demo",
+        notInterestedCtaText: d.notInterestedCtaText || "Our Services",
       });
     } catch (e) {
       setError(
@@ -262,13 +262,16 @@ export default function AdminFollowUp({ onNavigate, onLogout }) {
               placeholder="Whenever you want to transform your business into a digital presence…"
             />
             <div className="mt-4 border-t border-slate-100 pt-4">
-              <Field label="\"Our Services\" button label (opens the flow)">
+              <Field label={`"Our Services" button label (opens the flow)`}>
                 <input
                   className="adm-input"
                   maxLength={30}
                   value={form.notInterestedCtaText}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, notInterestedCtaText: e.target.value }))
+                    setForm((f) => ({
+                      ...f,
+                      notInterestedCtaText: e.target.value,
+                    }))
                   }
                   placeholder="Our Services"
                 />
