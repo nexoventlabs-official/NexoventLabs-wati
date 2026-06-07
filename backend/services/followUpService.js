@@ -1,5 +1,6 @@
 const Setting = require("../models/Setting");
 const flowImages = require("./flowImages");
+const flowService = require("./flowService");
 const meta = require("./metaService");
 const redis = require("./redisService");
 const Message = require("../models/Message");
@@ -21,6 +22,7 @@ const KEYS = {
   callCtaText: "followup_call_cta",
   demoCTAUrl: "followup_demo_url",
   demoCTAText: "followup_demo_cta_text",
+  notInterestedCtaText: "followup_not_interested_cta",
 };
 
 const DEFAULTS = {
@@ -34,6 +36,7 @@ const DEFAULTS = {
   callCtaText: "Call Us",
   demoCTAUrl: "",
   demoCTAText: "Book a Demo",
+  notInterestedCtaText: "Our Services",
 };
 
 // Button ids for the follow-up reply buttons.
@@ -140,8 +143,8 @@ async function sendFollowUpPrompt(contact) {
 }
 
 // Send the branched reply after the customer taps Interested / Not Interested.
-// Interested path: image header + body + Demo CTA URL button.
-// Not Interested path: image header + body + Call CTA button.
+// Interested:     image header + body + Demo URL CTA button (per-template or global).
+// Not Interested: image header + body + "Our Services" button that opens the flow.
 // `demoUrlOverride` — per-template demo URL (from the Interested button's demoUrl
 // field). If provided it takes priority over the global admin config demoCTAUrl.
 async function sendLeadReply(contact, interested, demoUrlOverride = null) {
@@ -152,20 +155,97 @@ async function sendLeadReply(contact, interested, demoUrlOverride = null) {
     : cfg.notInterestedHeader;
   const headerUrl = headerUrlRaw ? toJpgUrl(headerUrlRaw) : "";
 
-  // Interested → Demo URL CTA (per-template URL takes priority over global config);
-  // Not Interested → Call CTA.
-  let ctaUrl = "";
-  let ctaText = "";
+  // ── INTERESTED path: image header + body + Demo URL CTA ──────────────────
   if (interested) {
-    ctaUrl = (demoUrlOverride || cfg.demoCTAUrl || "").trim();
-    ctaText = (cfg.demoCTAText || "Book a Demo").slice(0, 20);
-  } else {
-    const callNumber = String(cfg.callNumber || "").replace(/[^\d+]/g, "");
-    ctaText = (cfg.callCtaText || "Call Us").slice(0, 20);
-    ctaUrl = callNumber
-      ? `tel:${callNumber.startsWith("+") ? callNumber : "+" + callNumber}`
-      : "";
+    const ctaUrl = (demoUrlOverride || cfg.demoCTAUrl || "").trim();
+    const ctaText = (cfg.demoCTAText || "Book a Demo").slice(0, 20);
+
+    const templateData = {
+      header: headerUrl
+        ? { type: "IMAGE", mediaUrl: headerUrl }
+        : { type: "NONE" },
+      body,
+      footer: "Nexovent Labs",
+      buttons: ctaUrl ? [{ type: "URL", text: ctaText, url: ctaUrl }] : [],
+    };
+
+    if (ctaUrl) {
+      try {
+        const header = headerUrl
+          ? { type: "image", link: headerUrl }
+          : { type: "text", text: "Nexovent Labs" };
+        const r = await meta.sendInteractive(contact.waId, {
+          kind: "cta_url",
+          header,
+          body,
+          footer: "Nexovent Labs",
+          action: {
+            name: "cta_url",
+            parameters: { display_text: ctaText, url: ctaUrl },
+          },
+        });
+        return record(contact, {
+          wamid: r?.messages?.[0]?.id,
+          type: headerUrl ? "image" : "text",
+          mediaUrl: headerUrl || "",
+          text: body,
+          caption: body,
+          templateData,
+        });
+      } catch (e) {
+        console.warn(
+          "[followUp] interested cta_url failed, falling back:",
+          e.response?.data?.error?.message || e.message,
+        );
+      }
+    }
+
+    // Fallback: inline the URL in the text
+    const inline = ctaUrl ? `${body}\n\n🔗 ${ctaText}: ${ctaUrl}` : body;
+    return sendMediaOrText(contact, headerUrl, inline, templateData);
   }
+
+  // ── NOT INTERESTED path: image header + body + "Our Services" flow button ─
+  const flowCtaText = (cfg.notInterestedCtaText || "Our Services").slice(0, 30);
+  const headerOverride = headerUrl ? { type: "image", link: headerUrl } : null;
+
+  try {
+    const flowResp = await flowService.sendCategoryFlow(contact.waId, {
+      body,
+      footer: "Nexovent Labs",
+      cta: flowCtaText,
+      ...(headerOverride ? { headerOverride } : {}),
+    });
+    if (flowResp) {
+      return record(contact, {
+        wamid: flowResp?.messages?.[0]?.id,
+        type: headerUrl ? "image" : "interactive",
+        mediaUrl: headerUrl || "",
+        text: body,
+        caption: headerUrl ? body : "",
+        templateData: {
+          header: headerUrl
+            ? { type: "IMAGE", mediaUrl: headerUrl }
+            : { type: "NONE" },
+          body,
+          footer: "Nexovent Labs",
+          buttons: [{ type: "QUICK_REPLY", text: flowCtaText }],
+        },
+      });
+    }
+  } catch (e) {
+    console.warn(
+      "[followUp] not-interested flow failed, falling back to call CTA:",
+      e.response?.data?.error?.message || e.message,
+    );
+  }
+
+  // Fallback: call CTA (if no flow is configured or flow failed)
+  const callNumber = String(cfg.callNumber || "").replace(/[^\d+]/g, "");
+  const callCtaText = (cfg.callCtaText || "Call Us").slice(0, 20);
+  const ctaUrl = callNumber
+    ? `tel:${callNumber.startsWith("+") ? callNumber : "+" + callNumber}`
+    : "";
 
   const templateData = {
     header: headerUrl
@@ -173,7 +253,7 @@ async function sendLeadReply(contact, interested, demoUrlOverride = null) {
       : { type: "NONE" },
     body,
     footer: "Nexovent Labs",
-    buttons: ctaUrl ? [{ type: "URL", text: ctaText, url: ctaUrl }] : [],
+    buttons: ctaUrl ? [{ type: "URL", text: callCtaText, url: ctaUrl }] : [],
   };
 
   if (ctaUrl) {
@@ -188,7 +268,7 @@ async function sendLeadReply(contact, interested, demoUrlOverride = null) {
         footer: "Nexovent Labs",
         action: {
           name: "cta_url",
-          parameters: { display_text: ctaText, url: ctaUrl },
+          parameters: { display_text: callCtaText, url: ctaUrl },
         },
       });
       return record(contact, {
@@ -201,23 +281,20 @@ async function sendLeadReply(contact, interested, demoUrlOverride = null) {
       });
     } catch (e) {
       console.warn(
-        "[followUp] cta_url reply failed, falling back:",
+        "[followUp] not-interested cta_url failed, falling back:",
         e.response?.data?.error?.message || e.message,
       );
     }
   }
 
-  // Fallback: inline the CTA info in the text.
-  const callNumber = interested
-    ? ""
-    : String(cfg.callNumber || "").replace(/[^\d+]/g, "");
-  const inline = interested
-    ? ctaUrl
-      ? `${body}\n\n🔗 ${ctaText}: ${ctaUrl}`
-      : body
-    : callNumber
-      ? `${body}\n\n📞 ${ctaText}: ${callNumber}`
-      : body;
+  const inline = callNumber
+    ? `${body}\n\n📞 ${callCtaText}: ${callNumber}`
+    : body;
+  return sendMediaOrText(contact, headerUrl, inline, templateData);
+}
+
+// Helper: send an image message with caption, or plain text if no image.
+async function sendMediaOrText(contact, headerUrl, text, templateData) {
   if (headerUrl) {
     let mediaRef = { link: headerUrl };
     try {
@@ -231,21 +308,21 @@ async function sendLeadReply(contact, interested, demoUrlOverride = null) {
     } catch {
       /* use link */
     }
-    const r = await meta.sendMedia(contact.waId, "image", mediaRef, inline);
+    const r = await meta.sendMedia(contact.waId, "image", mediaRef, text);
     return record(contact, {
       wamid: r?.messages?.[0]?.id,
       type: "image",
       mediaUrl: headerUrl,
-      text: inline,
-      caption: inline,
+      text,
+      caption: text,
       templateData,
     });
   }
-  const r = await meta.sendText(contact.waId, inline);
+  const r = await meta.sendText(contact.waId, text);
   return record(contact, {
     wamid: r?.messages?.[0]?.id,
     type: "text",
-    text: inline,
+    text,
     templateData,
   });
 }
