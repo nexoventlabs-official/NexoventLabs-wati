@@ -146,7 +146,8 @@ async function refresh() {
 
 // Send the APPROVED welcome template to a contact (works outside the 24h window).
 // Dynamic category data is injected into the flow button at send time.
-async function sendToContact(waId) {
+// `contactName` is optional - if provided it is injected as {{1}} in the body.
+async function sendToContact(waId, contactName) {
   const name = await getTemplateName();
   const language = await getLanguage();
   const welcome = await welcomeService.getWelcome();
@@ -169,6 +170,15 @@ async function sendToContact(waId) {
 
   const components = [];
   if (headerParam) components.push({ type: 'header', parameters: [headerParam] });
+
+  // Inject contact name as {{1}} body variable if provided.
+  if (contactName && contactName.trim()) {
+    components.push({
+      type: 'body',
+      parameters: [{ type: 'text', text: contactName.trim() }],
+    });
+  }
+
   components.push({
     type: 'button',
     sub_type: 'flow',

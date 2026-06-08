@@ -166,7 +166,7 @@ exports.send = async (req, res) => {
         await redis.consumeCampaignToken();
 
         try {
-          const resp = await welcomeTemplate.sendToContact(t.waId);
+          const resp = await welcomeTemplate.sendToContact(t.waId, t.name || '');
           const wamid = resp?.messages?.[0]?.id || '';
 
           t.lastStatus = 'sent';

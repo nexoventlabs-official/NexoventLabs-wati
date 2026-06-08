@@ -51,10 +51,10 @@ exports.sendTemplate = async (req, res) => {
       return res.status(400).json({ error: `Template is ${status}. Submit it and wait for Meta approval before sending.` });
     }
 
-    const resp = await welcomeTemplate.sendToContact(waId);
     // Ensure a contact exists so the conversation shows in the panel.
     let contact = await Contact.findOne({ waId });
     if (!contact) contact = await Contact.create({ waId, name: '' });
+    const resp = await welcomeTemplate.sendToContact(waId, contact.name || contact.profileName || '');
     res.json({ ok: true, wamid: resp?.messages?.[0]?.id || null });
   } catch (e) {
     const metaErr = e.response?.data?.error;
