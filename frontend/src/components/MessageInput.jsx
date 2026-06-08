@@ -51,16 +51,23 @@ export default function MessageInput({
           parameters: [{ type: tpl.header.type.toLowerCase(), [tpl.header.type.toLowerCase()]: { link: tpl.header.mediaUrl } }],
         });
       }
+      // Auto-fill {{1}} with the contact's name if the body uses it
+      if (tpl.body && /\{\{\s*1\s*\}\}/.test(tpl.body) && contact?.name) {
+        components.push({
+          type: 'body',
+          parameters: [{ type: 'text', text: contact.name || contact.profileName || '' }],
+        });
+      }
       onSendTemplate({
         templateName: tpl.name,
         language: tpl.language,
         components,
-        previewText: tpl.body,
+        previewText: tpl.body?.replace(/\{\{\s*1\s*\}\}/g, contact?.name || contact?.profileName || ''),
       });
     };
     window.addEventListener('template:use', onUse);
     return () => window.removeEventListener('template:use', onUse);
-  }, [onSendTemplate]);
+  }, [onSendTemplate, contact]);
 
   function send() {
     const t = text.trim();
