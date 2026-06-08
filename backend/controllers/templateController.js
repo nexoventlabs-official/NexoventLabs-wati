@@ -227,6 +227,16 @@ exports.submitTemplate = async (req, res) => {
         doc.header?.mediaUrl || header.example?.header_handle?.[0];
       if (!mediaUrl)
         return res.status(400).json({ error: "Header media URL missing" });
+
+      // Reject unsupported video formats early with a clear message.
+      if (header.format === "VIDEO") {
+        const lower = (mediaUrl.split("?")[0] || "").toLowerCase();
+        if (lower.endsWith(".mov") || lower.endsWith(".avi") || lower.endsWith(".wmv") || lower.endsWith(".mkv")) {
+          return res.status(400).json({
+            error: "Meta only accepts MP4 or 3GP video for template headers. Please re-upload your video as an MP4 file.",
+          });
+        }
+      }
       // Meta returns expiring whatsapp.net signed URLs that we can't re-fetch.
       // If a previous sync stored one of those (instead of the original
       // Cloudinary URL), refuse early with a clear message.
@@ -294,6 +304,23 @@ exports.submitTemplate = async (req, res) => {
       category: doc.category,
       components,
     };
+
+    // Meta requires example values for any {{N}} placeholders in the body.
+    // Without them the API returns "variable parameter format is incorrect".
+    const bodyComp = components.find((c) => c.type === "BODY");
+    if (bodyComp && /\{\{\s*\d+\s*\}\}/.test(bodyComp.text || "")) {
+      const vars = [];
+      let match;
+      const re = /\{\{\s*(\d+)\s*\}\}/g;
+      const seen = new Set();
+      while ((match = re.exec(bodyComp.text)) !== null) {
+        if (!seen.has(match[1])) {
+          seen.add(match[1]);
+          vars.push({ type: "text", text: "Customer" });
+        }
+      }
+      if (vars.length) bodyComp.example = { body_text: [vars.map((v) => v.text)] };
+    }
 
     let resp;
     try {
